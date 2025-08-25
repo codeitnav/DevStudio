@@ -45,6 +45,8 @@ router.post('/reset-password/:token', resetPassword);
 
 // Protected routes
 router.get('/profile', protect, getProfile);
+router.put('/profile', protect, updateProfile);
+router.put('/change-password', protect, changePassword);
 router.post('/logout', protect, logout);
 router.post('/logout-all', protect, logoutAllDevices);
 
