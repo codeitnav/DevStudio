@@ -1,4 +1,3 @@
-// src/services/cleanupService.js
 const { cleanupBlacklist } = require('./tokenBlacklistService');
 
 /**

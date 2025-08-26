@@ -616,8 +616,6 @@ const logoutAllDevices = async (req, res) => {
     const { userId } = req.user;
     const { token, tokenExp } = req;
 
-    // In a real implementation, you would need to track all active tokens per user
-    // For now, we'll just blacklist the current token
     await addToBlacklist(token, tokenExp);
 
     // Update user's token version or add a field to invalidate all existing tokens
