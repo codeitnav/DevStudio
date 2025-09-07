@@ -3,9 +3,10 @@ const jwt = require("jsonwebtoken");
 const Room = require("../../models/Room");
 const RoomMember = require("../../models/RoomMember");
 const User = require("../../models/User");
-const authMiddleware = require("../../middleware/authMiddleware");
+const authMiddleware = require("../middleware/authMiddleware");
+const roomService = require("../../services/roomService");
 const router = express.Router();
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 
 // Generate unique room ID
 function generateRoomId() {
@@ -21,7 +22,7 @@ function generateJoinCode() {
 }
 
 // @route   POST /api/room/create
-// @desc    Create a new room
+// @desc    Create a new room with CRDT support
 // @access  Public
 router.post("/create", async (req, res) => {
   try {
@@ -65,16 +66,7 @@ router.post("/create", async (req, res) => {
           expiredAt: jwtError.expiredAt || "N/A",
         });
 
-        // Determine error type and continue as guest
-        if (jwtError.name === "TokenExpiredError") {
-          console.log("🔄 Token expired, continuing as guest user");
-        } else if (jwtError.name === "JsonWebTokenError") {
-          console.log("❌ Invalid token format, continuing as guest user");
-        } else {
-          console.log("🔍 JWT verification failed, continuing as guest user");
-        }
-
-        // Continue as guest - no return statement, graceful degradation
+        // Continue as guest - graceful degradation
         ownerId = `guest_${Date.now()}_${Math.random()
           .toString(36)
           .substring(2, 8)}`;
@@ -113,16 +105,21 @@ router.post("/create", async (req, res) => {
         autoSave: true,
         theme: "dark",
       },
+      collaborationEnabled: true,
     });
 
     await newRoom.save();
+
+    // Initialize Yjs document for CRDT collaboration
+    roomService.initializeYjsDocument(roomId);
+    console.log(`🔧 Yjs document initialized for room: ${roomId}`);
 
     // If authenticated user, add them as owner/member
     if (ownerId) {
       const roomMember = new RoomMember({
         roomId,
         userId: ownerId,
-        userType: "user",
+        userType: ownerType,
         role: "owner",
         permissions: ["read", "write", "admin"],
       });
@@ -131,7 +128,7 @@ router.post("/create", async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: "Room created successfully",
+      message: "Room created successfully with CRDT support",
       room: {
         roomId,
         roomName: newRoom.roomName,
@@ -141,6 +138,8 @@ router.post("/create", async (req, res) => {
         maxMembers,
         createdAt: newRoom.createdAt,
         ownerType,
+        collaborationEnabled: true,
+        websocketUrl: `ws://${req.headers.host}/yjs?room=${roomId}`,
       },
     });
   } catch (error) {
@@ -207,6 +206,9 @@ router.get("/:roomId", async (req, res) => {
       .populate("userId", "username email")
       .select("-__v");
 
+    // Get collaboration info
+    const collaborationInfo = roomService.getActiveCollaborators(room.roomId);
+
     res.json({
       success: true,
       room: {
@@ -220,6 +222,9 @@ router.get("/:roomId", async (req, res) => {
         currentMembers: currentMembers,
         settings: room.settings,
         createdAt: room.createdAt,
+        collaborationEnabled: room.collaborationEnabled || true,
+        websocketUrl: `ws://${req.headers.host}/yjs?room=${room.roomId}`,
+        activeCollaborators: collaborationInfo.length,
         members: members.map((member) => ({
           userId: member.userId?._id || member.userId,
           username: member.userId?.username || `Guest_${member.userId}`,
@@ -313,6 +318,10 @@ router.post("/:roomId/join", async (req, res) => {
               joinedAt: existingMember.joinedAt,
               permissions: existingMember.permissions,
             },
+            collaboration: {
+              websocketUrl: `ws://${req.headers.host}/yjs?room=${room.roomId}`,
+              roomId: room.roomId,
+            },
           });
         }
       } catch (err) {
@@ -355,6 +364,11 @@ router.post("/:roomId/join", async (req, res) => {
         joinedAt: roomMember.joinedAt,
         permissions: roomMember.permissions,
       },
+      collaboration: {
+        websocketUrl: `ws://${req.headers.host}/yjs?room=${room.roomId}`,
+        roomId: room.roomId,
+        collaborationEnabled: room.collaborationEnabled || true,
+      },
     });
   } catch (error) {
     console.error("Error joining room:", error);
@@ -366,7 +380,7 @@ router.post("/:roomId/join", async (req, res) => {
 });
 
 // @route   POST /api/room/:roomId/save
-// @desc    Save room code
+// @desc    Save room code with CRDT persistence
 // @access  Public
 router.post("/:roomId/save", async (req, res) => {
   try {
@@ -388,6 +402,17 @@ router.post("/:roomId/save", async (req, res) => {
     room.lastActivity = new Date();
 
     await room.save();
+
+    // Also persist to Yjs document
+    try {
+      await roomService.persistDocumentState(roomId, code, language);
+      console.log(`💾 Document state persisted for room: ${roomId}`);
+    } catch (yjsError) {
+      console.warn(
+        `⚠️ Failed to persist Yjs state for room ${roomId}:`,
+        yjsError
+      );
+    }
 
     res.json({
       success: true,
@@ -427,10 +452,17 @@ router.get("/:roomId/members", async (req, res) => {
       lastSeen: member.lastSeen,
     }));
 
+    // Get active collaborators from Yjs
+    const activeCollaborators = roomService.getActiveCollaborators(roomId);
+
     res.json({
       success: true,
       members: formattedMembers,
       totalMembers: formattedMembers.length,
+      activeCollaborators: activeCollaborators.length,
+      collaboration: {
+        websocketUrl: `ws://${req.headers.host}/yjs?room=${roomId}`,
+      },
     });
   } catch (error) {
     console.error("Error fetching members:", error);
@@ -441,10 +473,111 @@ router.get("/:roomId/members", async (req, res) => {
   }
 });
 
+// @route   GET /api/room/:roomId/collaboration
+// @desc    Get collaboration info and WebSocket connection details
+// @access  Public
+router.get("/:roomId/collaboration", async (req, res) => {
+  try {
+    const { roomId } = req.params;
+
+    // Find room by roomId or joinCode
+    const room = await Room.findOne({
+      $or: [{ roomId }, { joinCode: roomId }],
+    });
+
+    if (!room) {
+      return res.status(404).json({
+        success: false,
+        error: "Room not found",
+      });
+    }
+
+    // Check room capacity
+    const currentMembers = await RoomMember.countDocuments({
+      roomId: room.roomId,
+    });
+
+    if (currentMembers >= room.maxMembers) {
+      return res.status(403).json({
+        success: false,
+        error: "Room is full",
+      });
+    }
+
+    // Get active collaborators
+    const activeCollaborators = roomService.getActiveCollaborators(room.roomId);
+
+    res.json({
+      success: true,
+      collaboration: {
+        roomId: room.roomId,
+        websocketUrl: `ws://${req.headers.host}/yjs?room=${room.roomId}`,
+        collaborationEnabled: room.collaborationEnabled !== false,
+        activeCollaborators: activeCollaborators,
+        maxMembers: room.maxMembers,
+        currentMembers: currentMembers,
+        language: room.language,
+        lastActivity: room.lastActivity,
+      },
+    });
+  } catch (error) {
+    console.error("Error getting collaboration info:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to get collaboration info",
+    });
+  }
+});
+
+// @route   GET /api/room/:roomId/document-state
+// @desc    Get current document state for CRDT initialization
+// @access  Public
+router.get("/:roomId/document-state", async (req, res) => {
+  try {
+    const { roomId } = req.params;
+
+    // Find room
+    const room = await Room.findOne({
+      $or: [{ roomId }, { joinCode: roomId }],
+    });
+
+    if (!room) {
+      return res.status(404).json({
+        success: false,
+        error: "Room not found",
+      });
+    }
+
+    // Get document state from roomService
+    let documentState = null;
+    try {
+      documentState = await roomService.getDocumentState(room.roomId);
+    } catch (error) {
+      console.warn(
+        `⚠️ Failed to get Yjs document state for room ${room.roomId}`
+      );
+    }
+
+    res.json({
+      success: true,
+      documentState: documentState,
+      code: room.code, // Fallback to stored code
+      language: room.language,
+      lastActivity: room.lastActivity,
+    });
+  } catch (error) {
+    console.error("Error getting document state:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to get document state",
+    });
+  }
+});
+
 // @route   PUT /api/room/:roomId/settings
 // @desc    Update room settings (owner only)
 // @access  Private
-router.put("/:roomId/settings", authMiddleware, async (req, res) => {
+router.put("/:roomId/settings", authMiddleware.protect, async (req, res) => {
   try {
     const { roomId } = req.params;
     const { settings } = req.body;
@@ -523,6 +656,9 @@ router.delete("/:roomId/leave", async (req, res) => {
       });
     }
 
+    // Remove from active collaborators
+    roomService.removeActiveCollaborator(roomId, userId);
+
     res.json({
       success: true,
       message: "Successfully left room",
@@ -539,7 +675,7 @@ router.delete("/:roomId/leave", async (req, res) => {
 // @route   DELETE /api/room/:roomId
 // @desc    Delete room (owner only)
 // @access  Private
-router.delete("/:roomId", authMiddleware, async (req, res) => {
+router.delete("/:roomId", authMiddleware.protect, async (req, res) => {
   try {
     const { roomId } = req.params;
 
@@ -563,6 +699,9 @@ router.delete("/:roomId", authMiddleware, async (req, res) => {
     // Delete room and all members
     await Room.deleteOne({ roomId });
     await RoomMember.deleteMany({ roomId });
+
+    // Clean up Yjs document
+    roomService.cleanupYjsDocument(roomId);
 
     res.json({
       success: true,

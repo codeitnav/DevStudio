@@ -2,7 +2,7 @@ const User = require('../../models/User');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const config = require('../../config/env');
-const { sendPasswordResetEmail, sendWelcomeEmail } = require('../../services/emailService');
+const { sendPasswordResetEmail, sendWelcomeEmail } = require('../../services/emailServices');
 
 // Generate JWT Token
 const generateToken = (userId) => {
