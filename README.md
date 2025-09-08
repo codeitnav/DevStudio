@@ -110,7 +110,7 @@ EMAIL_USER=your_email@example.com
 EMAIL_PASS=your_password
 ```
 
-🧪 Testing
+## 🧪 Testing
 
 Frontend: Uses Vitest + React Testing Library + Playwright for unit, integration, and e2e tests.
 
@@ -122,7 +122,7 @@ cd frontend
 npm run test:all
 ```
 
-📈 Future Enhancements
+## 📈 Future Enhancements
 
 🔍 Code syntax highlighting and linting in real-time.
 
