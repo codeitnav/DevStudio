@@ -79,7 +79,7 @@ export function Header({ onMenuToggle, showMenuButton = false }: HeaderProps) {
                   <>
                     <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
                       <span className="text-white text-xs font-medium">
-                        {user.username.charAt(0).toUpperCase()}
+                        {user?.username?.charAt(0).toUpperCase() || "U"}
                       </span>
                     </div>
                     <span className="hidden sm:inline text-sm font-medium truncate max-w-24">

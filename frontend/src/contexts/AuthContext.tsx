@@ -5,6 +5,7 @@ import { ErrorType } from '../types/error';
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
@@ -30,6 +31,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(null);
 
   const isAuthenticated = !!user && authService.isAuthenticated();
 
@@ -39,6 +41,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         if (authService.isAuthenticated()) {
           const currentUser = await authService.getCurrentUser();
+          const currentToken = authService.getToken();
+          setToken(currentToken);
           setUser(currentUser);
         }
       } catch (error) {
@@ -68,6 +72,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       const authResponse = await authService.login(credentials);
       setUser(authResponse.user);
+      setToken(authResponse.token || authService.getToken());
     } catch (error: any) {
       throw new Error(error.message || 'Login failed');
     } finally {
@@ -80,6 +85,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       const authResponse = await authService.register(userData);
       setUser(authResponse.user);
+      setToken(authResponse.token || authService.getToken());
     } catch (error: any) {
       throw new Error(error.message || 'Registration failed');
     } finally {
@@ -92,10 +98,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       await authService.logout();
       setUser(null);
+      setToken(null);
     } catch (error) {
       console.error('Logout error:', error);
       // Always clear user state even if logout fails
       setUser(null);
+      setToken(null);
     } finally {
       setIsLoading(false);
     }
@@ -193,6 +201,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value: AuthContextType = {
     user,
+    token,
     isLoading,
     isAuthenticated,
     login,

@@ -107,7 +107,7 @@ export function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-            Welcome back, {user?.username}!
+            Welcome back, {user?.username || "Guest"}!
           </h1>
           <p className="text-sm sm:text-base text-gray-600">
             Start collaborating on code with your team

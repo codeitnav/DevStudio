@@ -11,11 +11,17 @@ export interface KeyboardShortcut {
   preventDefault?: boolean;
 }
 
+const validateShortcut = (shortcut: KeyboardShortcut): boolean =>{
+  return typeof shortcut.key === 'string' && shortcut.key.trim().length > 0;
+};
+
 export const useKeyboardNavigation = (shortcuts: KeyboardShortcut[] = []) => {
-  const shortcutsRef = useRef(shortcuts);
-  shortcutsRef.current = shortcuts;
+  const validateShortcuts = shortcuts.filter(validateShortcut);
+  const shortcutsRef = useRef(validateShortcuts);
+  shortcutsRef.current = validateShortcuts;
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    if(!event.key) return;
     const activeShortcut = shortcutsRef.current.find(shortcut => {
       return (
         shortcut.key.toLowerCase() === event.key.toLowerCase() &&

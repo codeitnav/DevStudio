@@ -27,7 +27,7 @@ class AuthService implements IAuthService {
   }
 
   async register(userData: RegisterData): Promise<AuthResponse> {
-    const response = await httpClient.post<AuthResponse>('/auth/register', userData);
+    const response = await httpClient.post<AuthResponse>('/auth/signup', userData);
     
     if (response.success && response.data) {
       // Store tokens
@@ -103,7 +103,7 @@ class AuthService implements IAuthService {
   }
 
   async refreshToken(): Promise<AuthResponse> {
-    const refreshToken = httpClient.getRefreshToken();
+    const refreshToken = this.getRefreshToken();
     
     if (!refreshToken) {
       throw new Error('No refresh token available');
@@ -172,6 +172,25 @@ class AuthService implements IAuthService {
     throw new Error('Failed to export data');
   }
 
+  // ADD THESE NEW METHODS:
+
+  /**
+   * Get the current authentication token
+   */
+  getToken(): string | null {
+    return localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+  }
+
+  /**
+   * Get the current refresh token
+   */
+  getRefreshToken(): string | null {
+    return localStorage.getItem('refreshToken') || sessionStorage.getItem('refreshToken');
+  }
+
+  /**
+   * Check if user is authenticated
+   */
   isAuthenticated(): boolean {
     return httpClient.hasValidToken();
   }
