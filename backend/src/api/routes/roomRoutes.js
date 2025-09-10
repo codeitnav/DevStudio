@@ -36,7 +36,7 @@ router.post("/create", async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!roomName || roomName.trim().length === 0) {
+    if (!roomName) {
       return res.status(400).json({
         success: false,
         error: "Room name is required",
@@ -44,7 +44,7 @@ router.post("/create", async (req, res) => {
     }
 
     // Check if user is authenticated
-    let ownerId = null;
+    let ownerId = "abc";
     let ownerType = "guest";
     let ownerUsername = "Anonymous";
 
@@ -87,12 +87,13 @@ router.post("/create", async (req, res) => {
     const joinCode = generateJoinCode();
 
     // Create new room
+    // Create new room
     const newRoom = new Room({
       roomId,
-      roomName: roomName.trim(),
+      name: roomName.trim(), // Changed from roomName to name
       description: description.trim(),
       joinCode,
-      ownerId,
+      owner_id: ownerId, // Changed from ownerId to owner_id
       ownerType,
       language,
       isPrivate,
@@ -123,6 +124,7 @@ router.post("/create", async (req, res) => {
         role: "owner",
         permissions: ["read", "write", "admin"],
       });
+      console.log("owner created")
       await roomMember.save();
     }
 

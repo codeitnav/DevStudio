@@ -16,7 +16,31 @@ const setupSocketHandlers = require("./realtime/socketHandlers.js");
 const app = express();
 const server = http.createServer(app);
 
-connectDB();
+const startServer = async () => {
+  try {
+    await connectDB();
+    
+    const PORT = process.env.PORT || 5000;
+    
+    const server = app.listen(PORT, () => {
+      console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+    });
+
+    // Graceful shutdown
+    process.on('SIGTERM', async () => {
+      console.log('SIGTERM received, shutting down gracefully...');
+      server.close(() => {
+        process.exit(0);
+      });
+    });
+
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 // Global rate limiting
 const limiter = rateLimit({
@@ -62,6 +86,7 @@ app.get("/health", (req, res) => {
 app.use("/api/admin", require("./api/routes/adminRoutes"));
 app.use("/api/auth", require("./api/routes/authRoutes"));
 app.use("/api/room", require("./api/routes/roomRoutes"));
+app.use('/api/users', require('./api/routes/userRoutes'));
 app.use("/api/projects", require("./api/routes/fileSystemRoutes"));
 
 // Protected routes

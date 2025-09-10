@@ -80,7 +80,6 @@ const signup = async (req, res) => {
 
     await user.save();
 
-    // Send welcome email (don't wait for it to complete)
     sendWelcomeEmail({
       email: user.email,
       name: user.username

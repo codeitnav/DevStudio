@@ -1,5 +1,0 @@
-export { Dashboard } from './Dashboard'
-export { Rooms } from './Rooms'
-export { Room } from './Room'
-export { Profile } from './Profile'
-export { NotFound } from './NotFound'
