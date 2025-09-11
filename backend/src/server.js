@@ -16,36 +16,10 @@ const setupSocketHandlers = require("./realtime/socketHandlers.js");
 const app = express();
 const server = http.createServer(app);
 
-const startServer = async () => {
-  try {
-    await connectDB();
-    
-    const PORT = process.env.PORT || 5000;
-    
-    const server = app.listen(PORT, () => {
-      console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-    });
-
-    // Graceful shutdown
-    process.on('SIGTERM', async () => {
-      console.log('SIGTERM received, shutting down gracefully...');
-      server.close(() => {
-        process.exit(0);
-      });
-    });
-
-  } catch (error) {
-    console.error('❌ Failed to start server:', error);
-    process.exit(1);
-  }
-};
-
-startServer();
-
 // Global rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 100, 
   message: {
     success: false,
     message: "Too many requests from this IP, please try again later.",
@@ -120,10 +94,8 @@ const io = new Server(server, {
   pingInterval: 25000,
 });
 
-// Setup Socket.IO event handlers
 setupSocketHandlers(io);
 
-// Initialize Yjs WebSocket Server (for CRDT document synchronization)
 const roomService = require("./services/roomService");
 
 const wss = new WebSocket.Server({
@@ -143,7 +115,6 @@ wss.on("connection", (ws, req) => {
 
   console.log(`🔗 Yjs client connected to room: ${roomId}`);
 
-  // Initialize or get existing room document
   roomService.initializeYjsDocument(roomId);
 
   // Generate client ID
@@ -154,13 +125,8 @@ wss.on("connection", (ws, req) => {
   // Add client to room's active collaborators
   roomService.addActiveCollaborator(roomId, clientId);
 
-  // Setup Yjs WebSocket connection
-  setupWSConnection(ws, req, {
-    docName: roomId,
-    gc: true, // Enable garbage collection
-  });
+  setupWSConnection(ws, req, { docName: roomId, gc: true });
 
-  // Handle client disconnect
   ws.on("close", () => {
     console.log(`🔌 Yjs client disconnected from room: ${roomId}`);
     roomService.removeActiveCollaborator(roomId, clientId);
@@ -190,12 +156,35 @@ app.use((req, res) => {
 
 const PORT = config.PORT;
 
-server.listen(PORT, () => {
-  console.log(`🎯 DevStudio Backend running on port ${PORT}`);
-  console.log(`🌍 Environment: ${config.NODE_ENV}`);
-  console.log(`🔗 Yjs WebSocket server ready on ws://localhost:${PORT}/yjs`);
-  console.log(`🔗 Socket.IO server ready on ws://localhost:${PORT}/socket.io`);
-});
+// Connect DB once, then start server
+connectDB()
+  .then(async () => {
+    // Remove obsolete unique index on legacy schema if exists
+    try {
+      const mongoose = require('mongoose');
+      const conn = mongoose.connection;
+      const collections = await conn.db.listCollections({ name: 'roommembers' }).toArray();
+      if (collections.length > 0) {
+        const idxInfo = await conn.db.collection('roommembers').indexInformation();
+        if (idxInfo['room_id_1_user_id_1']) {
+          await conn.db.collection('roommembers').dropIndex('room_id_1_user_id_1');
+          console.log('🧹 Dropped obsolete index room_id_1_user_id_1 on roommembers');
+        }
+      }
+    } catch (e) {
+      console.warn('Index cleanup skipped:', e.message);
+    }
+    server.listen(PORT, () => {
+      console.log(`🎯 DevStudio Backend running on port ${PORT}`);
+      console.log(`🌍 Environment: ${config.NODE_ENV}`);
+      console.log(`🔗 Yjs WebSocket server ready on ws://localhost:${PORT}/yjs`);
+      console.log(`🔗 Socket.IO server ready on ws://localhost:${PORT}/socket.io`);
+    });
+  })
+  .catch((err) => {
+    console.error("❌ Failed to start server:", err);
+    process.exit(1);
+  });
 
 // Handle unhandled promise rejections
 process.on("unhandledRejection", (err, promise) => {
@@ -208,10 +197,7 @@ process.on("unhandledRejection", (err, promise) => {
 // Add to your existing server.js
 const { startCleanupScheduler } = require("./services/cleanupService");
 
-// Start cleanup scheduler after database connection
-connectDB().then(() => {
-  // Start Redis blacklist cleanup (runs every hour)
-  startCleanupScheduler(60);
-});
+// Start cleanup scheduler (runs every hour)
+startCleanupScheduler(60);
 
 module.exports = app;

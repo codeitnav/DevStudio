@@ -16,7 +16,6 @@ function setupSocketHandlers(io) {
     // Extract user information from authentication
     extractUserInfo(socket);
 
-    // Core Task 2.3 Events
     handleJoinRoom(socket, io);
     handleLeaveRoom(socket, io);
     handleYjsUpdate(socket, io);
@@ -116,9 +115,7 @@ function handleJoinRoom(socket, io) {
       }
 
       // Check room capacity
-      const currentMembers = await RoomMember.countDocuments({
-        roomId: room.roomId,
-      });
+      const currentMembers = await RoomMember.countDocuments({ roomId: room.roomId });
 
       if (currentMembers >= room.maxMembers) {
         socket.emit("join-room-error", {

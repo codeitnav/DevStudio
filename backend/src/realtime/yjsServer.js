@@ -85,20 +85,17 @@ function setupYjsConnection(ws, req) {
     return;
   }
 
-  // Generate client ID
   const clientId = Math.random().toString(36).substring(2, 15) + 
                    Math.random().toString(36).substring(2, 15);
 
-  // Add client to room
   roomManager.addClientToRoom(roomId, clientId);
 
-  // Set up Yjs WebSocket connection
+  // SYjs WebSocket connection
   setupWSConnection(ws, req, {
     docName: roomId,
-    gc: true // Enable garbage collection
+    gc: true 
   });
 
-  // Handle client disconnect
   ws.on('close', () => {
     roomManager.removeClientFromRoom(roomId, clientId);
   });

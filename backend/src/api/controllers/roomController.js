@@ -12,9 +12,8 @@ exports.createRoom = async (req, res) => {
     const room = new Room({
       name: roomName,          // map frontend roomName → backend name
       description: description || "",
-      isPrivate: isPrivate || false,
-      owner_id: req.user._id,  // add owner_id
-      collaborators: [req.user._id],
+      isPublic: !isPrivate || true,
+      owner_id: req.user._id
     })
 
     await room.save()
@@ -98,7 +97,7 @@ exports.deleteRoom = async (req, res) => {
 // Get all rooms for a user
 exports.getUserRooms = async (req, res) => {
   try {
-    const rooms = await Room.find({ collaborators: req.user._id }).sort({
+    const rooms = await Room.find({ owner_id: req.user._id }).sort({
       createdAt: -1,
     });
     res.json({ data: rooms });

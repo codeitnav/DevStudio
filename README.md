@@ -9,7 +9,7 @@ DevStudio is a **real-time collaborative code editor** that brings the power of 
 India and the world are moving fast towards **remote work and collaboration-first environments**. DevStudio addresses one of the biggest developer needs:  
 > *"How can teams code together in real-time, with instant updates, while maintaining reliability, security, and performance?"*
 
-This project highlights **skills recruiters love**:
+**This project highlights**:
 
 - **Real-Time Systems (WebSockets):** Mastery of live, bidirectional communication.
 - **State Synchronization:** Handling concurrency where multiple users type at the same time.
@@ -93,11 +93,6 @@ cd frontend
 npm install
 npm run dev            # start frontend dev server
 ```
-4️⃣ Access the App
-```bash
-Visit:
-http://localhost:5173
-```
 🔑 Environment Variables
 
 Backend .env example:
@@ -108,18 +103,6 @@ JWT_SECRET=your_jwt_secret
 REDIS_URL=redis://localhost:6379
 EMAIL_USER=your_email@example.com
 EMAIL_PASS=your_password
-```
-
-## 🧪 Testing
-
-Frontend: Uses Vitest + React Testing Library + Playwright for unit, integration, and e2e tests.
-
-Backend: Extendable with Jest/Mocha (to be added).
-
-Run frontend tests:
-```bash
-cd frontend
-npm run test:all
 ```
 
 ## 📈 Future Enhancements

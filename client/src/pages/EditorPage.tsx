@@ -78,17 +78,21 @@ const EditorPage: React.FC = () => {
     }
   }
 
-  const setupCollaboration = () => {
+  const setupCollaboration = async () => {
     // Initialize Yjs document
     const doc = new Y.Doc()
     setYjsDoc(doc)
 
+    // Fetch collaboration info for correct websocket URL
+    const collab = await roomService.getCollaborationInfo(roomId!)
+    const wsUrl = collab?.collaboration?.websocketUrl || `ws://localhost:5000/yjs?room=${roomId}`
+
     // Setup WebSocket provider for Yjs
-    const wsProvider = new WebsocketProvider("ws://localhost:5000/yjs", roomId!, doc)
+    const wsProvider = new WebsocketProvider(wsUrl.replace(/\?room=.*/,'/yjs'), roomId!, doc)
     setProvider(wsProvider)
 
     // Get shared text type
-    const yText = doc.getText("monaco")
+    const yText = doc.getText("code")
 
     // Setup Monaco editor binding
     yText.observe(() => {
@@ -98,24 +102,23 @@ const EditorPage: React.FC = () => {
     // Setup Socket.IO for real-time features
     const socket = socketManager.connect()
 
-    socket.emit("join-room", { roomId, user })
+    socket.emit("join-room", { roomId })
 
-    socket.on("user-joined", (data) => {
-      toast.success(`${data.userName} joined the room`)
+    socket.on("user-joined-room", (data: any) => {
       addCollaborator({
         userId: data.userId,
-        userName: data.userName,
+        userName: data.username,
         position: { lineNumber: 1, column: 1 },
-        color: generateUserColor(data.userId),
+        color: generateUserColor(String(data.userId)),
       })
     })
 
-    socket.on("user-left", (data) => {
-      removeCollaborator(data.userId)
+    socket.on("user-left-room", (data: any) => {
+      removeCollaborator(String(data.userId))
     })
 
-    socket.on("cursor-position", (data) => {
-      updateCollaboratorCursor(data.userId, data.position)
+    socket.on("cursor-update", (data: any) => {
+      updateCollaboratorCursor(String(data.userId), data.position)
     })
 
     wsProvider.on("status", (event: any) => {
@@ -156,7 +159,7 @@ const EditorPage: React.FC = () => {
   const handleCursorPositionChange = (position: any) => {
     const socket = socketManager.getSocket()
     if (socket && position) {
-      socket.emit("cursor-position", {
+      socket.emit("cursor-update", {
         roomId,
         userId: user?._id,
         position: {

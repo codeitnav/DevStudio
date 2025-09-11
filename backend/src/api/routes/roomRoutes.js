@@ -86,14 +86,12 @@ router.post("/create", async (req, res) => {
     const roomId = generateRoomId();
     const joinCode = generateJoinCode();
 
-    // Create new room
-    // Create new room
     const newRoom = new Room({
       roomId,
-      name: roomName.trim(), // Changed from roomName to name
+      name: roomName.trim(),
       description: description.trim(),
       joinCode,
-      owner_id: ownerId, // Changed from ownerId to owner_id
+      owner_id: ownerId,
       ownerType,
       language,
       isPrivate,
@@ -133,7 +131,7 @@ router.post("/create", async (req, res) => {
       message: "Room created successfully with CRDT support",
       room: {
         roomId,
-        roomName: newRoom.roomName,
+        roomName: newRoom.name,
         joinCode,
         language,
         isPrivate,
@@ -204,9 +202,7 @@ router.get("/:roomId", async (req, res) => {
     }
 
     // Get room members
-    const members = await RoomMember.find({ roomId: room.roomId })
-      .populate("userId", "username email")
-      .select("-__v");
+    const members = await RoomMember.find({ roomId: room.roomId }).select("-__v");
 
     // Get collaboration info
     const collaborationInfo = roomService.getActiveCollaborators(room.roomId);
@@ -228,8 +224,8 @@ router.get("/:roomId", async (req, res) => {
         websocketUrl: `ws://${req.headers.host}/yjs?room=${room.roomId}`,
         activeCollaborators: collaborationInfo.length,
         members: members.map((member) => ({
-          userId: member.userId?._id || member.userId,
-          username: member.userId?.username || `Guest_${member.userId}`,
+          userId: member.userId,
+          username: member.username || `Guest_${member.userId}`,
           role: member.role,
           joinedAt: member.joinedAt,
           isOnline: member.isOnline,
@@ -436,16 +432,14 @@ router.get("/:roomId/members", async (req, res) => {
   try {
     const { roomId } = req.params;
 
-    const members = await RoomMember.find({ roomId })
-      .populate("userId", "username email avatar")
-      .sort({ joinedAt: 1 });
+    const members = await RoomMember.find({ roomId }).sort({ joinedAt: 1 });
 
     const formattedMembers = members.map((member) => ({
       id: member._id,
-      userId: member.userId?._id || member.userId,
-      username: member.userId?.username || member.username || "Anonymous",
-      email: member.userId?.email,
-      avatar: member.userId?.avatar,
+      userId: member.userId,
+      username: member.username || "Anonymous",
+      email: undefined,
+      avatar: undefined,
       userType: member.userType,
       role: member.role,
       permissions: member.permissions,
@@ -594,7 +588,7 @@ router.put("/:roomId/settings", authMiddleware.protect, async (req, res) => {
     }
 
     // Check if user is owner
-    if (room.ownerId?.toString() !== req.userId) {
+    if ((room.ownerId || room.owner_id)?.toString() !== (req.user?.userId || '').toString()) {
       return res.status(403).json({
         success: false,
         error: "Only room owner can update settings",
@@ -691,7 +685,7 @@ router.delete("/:roomId", authMiddleware.protect, async (req, res) => {
     }
 
     // Check ownership
-    if (room.ownerId?.toString() !== req.userId) {
+    if ((room.ownerId || room.owner_id)?.toString() !== (req.user?.userId || '').toString()) {
       return res.status(403).json({
         success: false,
         error: "Only room owner can delete room",

@@ -2,7 +2,7 @@ const WebSocket = require('ws');
 const { setupYjsConnection, roomManager } = require('./yjsServer');
 
 function initializeWebSocketServers(server) {
-  // Existing Socket.IO server (keep your current implementation)
+  // Existing Socket.IO server 
   const io = require('socket.io')(server, {
     cors: {
       origin: process.env.CLIENT_URL || "http://localhost:3000",

@@ -516,10 +516,19 @@ class RoomService {
 
   async persistDocumentUpdate(roomId, update) {
     try {
-      await Room.findByIdAndUpdate(roomId, {
-        yjsDocumentState: Buffer.from(update),
-        lastActivity: new Date()
-      });
+      // Apply update to in-memory doc
+      const ydoc = this.getYjsDocument(roomId) || (await this.initializeYjsDocument(roomId)).doc;
+      if (ydoc) {
+        Y.applyUpdate(ydoc, update);
+      }
+
+      // Save binary state snapshot to DB
+      const state = Y.encodeStateAsUpdate(ydoc);
+      await Room.findOneAndUpdate(
+        { $or: [{ roomId }, { joinCode: roomId }] },
+        { yjsDocumentState: Buffer.from(state), lastActivity: new Date() },
+        { new: true }
+      );
     } catch (error) {
       console.error(`Failed to persist document update for room ${roomId}:`, error);
     }
@@ -570,6 +579,64 @@ class RoomService {
   cleanupYjsDocument(roomId) {
     this.yjsDocuments.delete(roomId);
     console.log(`Yjs document cleaned up for room: ${roomId}`);
+  }
+
+  // New helpers used by routes and sockets
+  async applyDocumentUpdate(roomId, update, userId) {
+    try {
+      await this.persistDocumentUpdate(roomId, update);
+      this.addActiveCollaborator(roomId, userId);
+    } catch (error) {
+      console.error(`applyDocumentUpdate error for room ${roomId}:`, error);
+    }
+  }
+
+  async persistDocumentState(roomId, code, language) {
+    try {
+      const ydoc = this.getYjsDocument(roomId) || (await this.initializeYjsDocument(roomId)).doc;
+
+      // Update shared types
+      const text = ydoc.getText('code');
+      const meta = ydoc.getMap('metadata');
+      text.delete(0, text.length);
+      text.insert(0, code || '');
+      if (language) meta.set('language', language);
+
+      // Save binary state
+      const state = Y.encodeStateAsUpdate(ydoc);
+      await Room.findOneAndUpdate(
+        { $or: [{ roomId }, { joinCode: roomId }] },
+        {
+          code: code || '',
+          language: language || 'javascript',
+          yjsDocumentState: Buffer.from(state),
+          lastActivity: new Date(),
+        }
+      );
+    } catch (error) {
+      console.error(`persistDocumentState error for room ${roomId}:`, error);
+    }
+  }
+
+  async getDocumentState(roomId) {
+    try {
+      const ydoc = this.getYjsDocument(roomId) || (await this.initializeYjsDocument(roomId)).doc;
+      const state = Y.encodeStateAsUpdate(ydoc);
+      return state;
+    } catch (error) {
+      console.error(`getDocumentState error for room ${roomId}:`, error);
+      return null;
+    }
+  }
+
+  async updateAwareness(roomId, userId, awareness) {
+    try {
+      const ydoc = this.getYjsDocument(roomId) || (await this.initializeYjsDocument(roomId)).doc;
+      const awarenessMap = ydoc.getMap('awareness');
+      awarenessMap.set(String(userId), awareness || {});
+    } catch (error) {
+      console.error(`updateAwareness error for room ${roomId}:`, error);
+    }
   }
 
   // Utility Methods
