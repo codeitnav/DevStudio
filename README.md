@@ -14,7 +14,9 @@ India and the world are moving fast towards **remote work and collaboration-firs
 - **Real-Time Systems (WebSockets):** Mastery of live, bidirectional communication.
 - **State Synchronization:** Handling concurrency where multiple users type at the same time.
 - **Third-Party Integrations:** Use of the **Monaco Editor** (that powers VS Code).
-- **Scalable Backend:** Built with **Node.js, Express, MongoDB, Redis, and Socket.io**.
+- **Scalable Backend:** Built with **Node.j
+
+s, Express, MongoDB, Redis, and Socket.io**.
 - **Modern Frontend:** Built with **React (Vite + TypeScript + Zustand + TailwindCSS)**.
 
 ---
@@ -57,12 +59,12 @@ India and the world are moving fast towards **remote work and collaboration-firs
 ## 📂 Project Structure
 ```bash
 DevStudio/
-│── frontend/ # React + Vite + TypeScript
+│── client/ # NextJs + TypeScript
 │ ├── src/ # Components, pages, hooks, utils
 │ ├── public/ # Static assets
 │ └── package.json
 │
-│── backend/ # Node.js + Express + MongoDB
+│── server/ # Node.js + Express + MongoDB
 │ ├── src/ # Controllers, models, routes, server.js
 │ ├── .env # Environment variables
 │ └── package.json
