@@ -7,9 +7,9 @@ const folderSchema = new mongoose.Schema(
       required: [true, 'Folder name is required'],
       trim: true,
     },
-    owner: {
+    room: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: 'Room',
       required: true,
     },
     parent: {
@@ -21,9 +21,9 @@ const folderSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Compound index to ensure unique folder names under the same parent for a given owner
+// Compound index to ensure unique folder names under the same parent for a given room
 folderSchema.index(
-  { name: 1, owner: 1, parent: 1 },
+  { name: 1, room: 1, parent: 1 },
   { unique: true }
 );
 

@@ -27,9 +27,9 @@ const fileSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
-    owner: {
+    room: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: 'Room',
       required: true,
     },
     folder: {
@@ -41,9 +41,9 @@ const fileSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Compound index to prevent duplicate file names in the same folder by the same owner
+// Compound index to prevent duplicate file names in the same folder within the same room
 fileSchema.index(
-  { name: 1, owner: 1, folder: 1 },
+  { name: 1, room: 1, folder: 1 },
   { unique: true }
 );
 

@@ -23,66 +23,102 @@ const CodeEditor: React.FC = () => {
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [copied, setCopied] = useState(false);
-  
-  // Ref to hold Yjs instances for cleanup
+
+  // Ref to hold all Yjs instances for state management and cleanup
   const yjsInstances = useRef<{
     doc: Y.Doc | null;
     webrtcProvider: WebrtcProvider | null;
     websocketProvider: WebsocketProvider | null;
     binding: MonacoBinding | null;
-  }>({ doc: null, webrtcProvider: null, websocketProvider: null, binding: null });
-
+    yfiles: Y.Array<any> | null;
+    ycontents: Y.Map<Y.Text> | null;
+  }>({ doc: null, webrtcProvider: null, websocketProvider: null, binding: null, yfiles: null, ycontents: null });
 
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const params = useParams();
   const roomId = params.roomId as string;
 
+  // Main effect for setting up and tearing down Yjs connection
   useEffect(() => {
     if (!isLoading && !user) {
       router.push('/?login=true');
     }
-    
-    // Cleanup function on component unmount
+
+    // 1. Initialize YJS Document and Shared Types
+    const doc = new Y.Doc();
+    const yfiles = doc.getArray('files'); // For file tree structure
+    const ycontents = doc.getMap<Y.Text>('contents'); // For content of each file
+
+    // 2. Connect to peers with providers
+    const wsProvider = new WebsocketProvider('ws://localhost:5000', roomId, doc);
+    const webrtcProvider = new WebrtcProvider(roomId, doc);
+
+    // Store instances in ref
+    yjsInstances.current = {
+      ...yjsInstances.current,
+      doc,
+      webrtcProvider,
+      websocketProvider: wsProvider,
+      yfiles,
+      ycontents,
+    };
+
+    // 3. Cleanup function on component unmount
     return () => {
       yjsInstances.current.doc?.destroy();
-      yjsInstances.current.webrtcProvider?.destroy();
       yjsInstances.current.websocketProvider?.destroy();
+      yjsInstances.current.webrtcProvider?.destroy();
       yjsInstances.current.binding?.destroy();
     };
-  }, [isLoading, user, router]);
+  }, [roomId, isLoading, user, router]);
 
+  // Effect for handling editor binding when the active file changes
+  useEffect(() => {
+    // Destroy the previous binding if it exists
+    yjsInstances.current.binding?.destroy();
 
-  const handleEditorDidMount = (editor: Monaco.editor.IStandaloneCodeEditor, monaco: typeof Monaco) => {
+    if (activeFile && editorRef.current && yjsInstances.current.ycontents && yjsInstances.current.webrtcProvider) {
+      const { ycontents, webrtcProvider } = yjsInstances.current;
+
+      // Get or create the Y.Text for the active file
+      let ytext = ycontents.get(activeFile);
+      if (!ytext) {
+        ytext = new Y.Text();
+        ycontents.set(activeFile, ytext);
+      }
+      
+      const editorModel = editorRef.current.getModel();
+      
+      // Create a new binding for the active file's content
+      if (editorModel) {
+        yjsInstances.current.binding = new MonacoBinding(
+          ytext,
+          editorModel,
+          new Set([editorRef.current]),
+          webrtcProvider.awareness
+        );
+      }
+    }
+  }, [activeFile]);
+
+  const handleEditorDidMount = (editor: Monaco.editor.IStandaloneCodeEditor) => {
     editorRef.current = editor;
     editor.focus();
-
-    // 1. Initialize YJS
-    const doc = new Y.Doc();
-    const ytext = doc.getText("monaco"); // a shared text object
-    yjsInstances.current.doc = doc;
-
-    // 2. Connect to peers with WebRTC and WebSocket providers
-    // WebSocket is for resilience and peer discovery
-    const wsProvider = new WebsocketProvider(
-      'ws://localhost:5000', // Your server's WebSocket endpoint
-      roomId,
-      doc
-    );
-    yjsInstances.current.websocketProvider = wsProvider;
-
-    // WebRTC is for ultra-low-latency peer-to-peer editing
-    const webrtcProvider = new WebrtcProvider(roomId, doc);
-    yjsInstances.current.webrtcProvider = webrtcProvider;
-
-    // 3. Bind Yjs to the Monaco Editor
-    const binding = new MonacoBinding(
-      ytext,
-      editor.getModel()!,
-      new Set([editor]),
-      webrtcProvider.awareness
-    );
-    yjsInstances.current.binding = binding;
+  };
+  
+  const handleFileSelect = (fileId: string, fileName: string) => {
+    // Set the active file ID, which triggers the useEffect above to handle the binding
+    setActiveFile(fileId);
+    
+    // Update language based on file extension
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    const langMap: { [key: string]: string } = {
+      'js': 'javascript', 'jsx': 'javascript', 'ts': 'typescript',
+      'tsx': 'typescript', 'py': 'python', 'java': 'java', 'cpp': 'cpp',
+      'c': 'c', 'html': 'html', 'css': 'css', 'json': 'json',
+    };
+    setLanguage((ext && langMap[ext]) || 'plaintext');
   };
 
   const handleShare = () => {
@@ -91,43 +127,14 @@ const CodeEditor: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
   
-  const onSelectLanguage = (language: string) => {
-    setLanguage(language);
-    // Note: With Yjs, we don't set value directly.
-    // Instead, you might want to clear the shared doc and insert snippet content.
-  };
-
-  const handleFileSelect = async (fileId: string, content: string, fileName: string) => {
-    setActiveFile(fileId);
-    
-    // When a new file is selected, update the shared document for everyone
-    const ytext = yjsInstances.current.doc?.getText("monaco");
-    if (ytext) {
-      yjsInstances.current.doc?.transact(() => {
-        ytext.delete(0, ytext.length); // Clear current content
-        ytext.insert(0, content); // Insert new content
-      });
-    }
-
-    const ext = fileName.split('.').pop()?.toLowerCase();
-    const langMap: { [key: string]: string } = {
-      'js': 'javascript', 'jsx': 'javascript', 'ts': 'typescript',
-      'tsx': 'typescript', 'py': 'python', 'java': 'java', 'cpp': 'cpp',
-      'c': 'c', 'html': 'html', 'css': 'css', 'json': 'json',
-    };
-    if (ext && langMap[ext]) {
-      setLanguage(langMap[ext]);
-    } else {
-      setLanguage('plaintext');
-    }
-  };
-
   const handleSave = async () => {
-    if (!activeFile || !yjsInstances.current.doc) return;
+    if (!activeFile || !yjsInstances.current.ycontents) return;
     setIsSaving(true);
     try {
-      const currentContent = yjsInstances.current.doc.getText("monaco").toString();
-      await api.updateFileContent(activeFile, currentContent);
+      const contentToSave = yjsInstances.current.ycontents.get(activeFile)?.toString();
+      if (contentToSave !== undefined) {
+        await api.updateFileContent(activeFile, contentToSave);
+      }
     } catch (error) {
       console.error("Failed to save file:", error);
     } finally {
@@ -142,7 +149,12 @@ const CodeEditor: React.FC = () => {
   return (
     <div className="flex h-screen bg-gray-900 text-white">
       <div className={`transition-all duration-300 ease-in-out flex-shrink-0 bg-gray-800 border-r border-gray-700 ${sidebarOpen ? "w-72" : "w-0"} overflow-hidden`}>
-        {sidebarOpen && <FileExplorer onFileSelect={handleFileSelect} />}
+        {sidebarOpen && yjsInstances.current.doc && (
+          <FileExplorer
+            yDoc={yjsInstances.current.doc}
+            onFileSelect={handleFileSelect}
+          />
+        )}
       </div>
       
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -155,7 +167,7 @@ const CodeEditor: React.FC = () => {
             >
               {sidebarOpen ? <ChevronLeft className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
             </button>
-            <LanguageSelector language={language} onSelect={onSelectLanguage} />
+            <LanguageSelector language={language} onSelect={setLanguage} />
           </div>
           <button
             onClick={handleShare}
@@ -173,8 +185,7 @@ const CodeEditor: React.FC = () => {
               height="100%"
               theme="vs-dark"
               language={language}
-              onMount={handleEditorDidMount} // Use the new mount function
-              // value and onChange are no longer needed; y-monaco handles them
+              onMount={handleEditorDidMount}
             />
           </div>
           <div className="w-1/2 h-full">

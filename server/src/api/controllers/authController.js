@@ -1,10 +1,8 @@
 const User = require('../../models/User');
 const jwt = require('jsonwebtoken');
 
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '30d',
-  });
+const generateToken = (id, expiresIn = '30d') => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn });
 };
 
 // --- PUBLIC CONTROLLERS ---
@@ -92,7 +90,7 @@ exports.guestLogin = async (req, res) => {
             username: guestUser.username,
             email: guestUser.email,
             isGuest: true,
-            token: generateToken(guestUser._id),
+            token: generateToken(guestUser._id, '2h'),
         });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
