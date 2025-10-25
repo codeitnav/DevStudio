@@ -1,9 +1,11 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { getProfile, loginUser, signupUser } from "@/lib/services/api";
-import { jwtDecode } from 'jwt-decode';
+// Removed API/JWT imports, as we are no longer authenticating
+// import { getProfile, loginUser, signupUser } from "@/lib/services/api";
+// import { jwtDecode } from 'jwt-decode';
 
+// Simplified User interface
 interface User {
   _id: string;
   username: string;
@@ -12,84 +14,37 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
-  login: (credentials: any) => Promise<void>;
-  signup: (userData: any) => Promise<void>;
-  logout: () => void;
   isLoading: boolean;
-  error: string | null;
+  // Removed login, signup, logout, token, error
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Helper to generate a random user ID
+const guestId = () => `guest_${Math.random().toString(36).substr(2, 9)}`;
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadUserFromToken = async () => {
-      const storedToken = localStorage.getItem("userToken");
-      if (storedToken) {
-        try {
-          const decoded: { id: string, exp: number } = jwtDecode(storedToken);
-          if (decoded.exp * 1000 > Date.now()) {
-            setToken(storedToken);
-            const response = await getProfile();
-            setUser(response.data);
-          } else {
-            localStorage.removeItem("userToken");
-          }
-        } catch (err) {
-          localStorage.removeItem("userToken");
-          console.error("Failed to load user from token:", err);
-        }
-      }
-      setIsLoading(false);
+    // FIX: Instead of loading from token, create a simple guest user
+    // This user object is only for Yjs Awareness (e.g., cursor name)
+    const guestUser: User = {
+      _id: guestId(),
+      username: `Guest ${guestId().substring(6, 10)}`,
+      email: "guest@example.com"
     };
-
-    loadUserFromToken();
+    
+    setUser(guestUser);
+    setIsLoading(false);
+    
+    // Removed all token loading logic
   }, []);
 
-  const login = async (credentials: any) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await loginUser(credentials);
-      setUser(response.data);
-      setToken(response.data.token);
-      localStorage.setItem("userToken", response.data.token);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to login");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
+  // Removed login, signup, and logout functions
 
-  const signup = async (userData: any) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await signupUser(userData);
-      setUser(response.data);
-      setToken(response.data.token);
-      localStorage.setItem("userToken", response.data.token);
-    } catch (err: any) {
-        setError(err.response?.data?.message || "Failed to sign up");
-    } finally {
-        setIsLoading(false);
-    }
-  };
-
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem("userToken");
-  };
-
-  const value = { user, token, login, signup, logout, isLoading, error };
+  const value = { user, isLoading };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

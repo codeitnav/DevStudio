@@ -13,7 +13,7 @@ const JoinOrCreateForm = () => {
 
   const handleCreateRoom = () => {
     const newRoomId = nanoid(7); 
-    router.push(`/editor/${newRoomId}`);
+    router.push(`/playground/${newRoomId}`);
   };
 
   const handleJoinRoomSubmit = (e: React.FormEvent) => {

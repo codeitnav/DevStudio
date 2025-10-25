@@ -1,49 +1,45 @@
+// --- Imports ---
 require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
 const http = require('http');
-const { Server } = require('ws');
-const { setupWSConnection } = require('y-websocket/bin/utils');
-const cron = require('node-cron');
-const { cleanupGuestData } = require('./jobs/cleanup');
+const cors = require('cors');
 
-const authRoutes = require('./api/routes/authRoutes');
-const fileSystemRoutes = require('./api/routes/fileSystemRoutes');
-const roomRoutes = require('./api/routes/roomRoutes'); 
+// --- Local Imports ---
+const connectDB = require('./config/db');
+const { mdb } = require('./config/yjs');
+const { initWebSocketServer } = require('./services/websocketService');
+const authRoutes = require('./api/routes/authRoutes'); // Assuming this path is correct
+
+// --- Environment Variable Validation ---
+const { PORT } = process.env;
+if (!PORT) {
+  console.error('Error: Missing required environment variable PORT.');
+  process.exit(1);
+}
+
+connectDB();
 const app = express();
+app.use(cors({
+  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  credentials: true,
+}));
+app.use(express.json());
+
+// --- REST API Routes ---
+app.use('/api/auth', authRoutes);
+// You could add other REST routes here (e.g., for creating/managing rooms)
+
+// --- HTTP Server Creation ---
 const server = http.createServer(app);
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use('/uploads', express.static('uploads'));
+// --- Initialize WebSocket Server ---
+// Pass the HTTP server and the Yjs persistence instance
+initWebSocketServer(server, mdb);
 
-// Database Connection 
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB connected successfully!'))
-  .catch(err => console.error('MongoDB connection error:', err));
-
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/fs', fileSystemRoutes);
-app.use('/api/rooms', roomRoutes); 
-
-// Yjs WebSocket Server 
-const wss = new Server({ server });
-wss.on('connection', (ws, req) => {
-  setupWSConnection(ws, req);
-});
-
-// Schedule the cleanup job
-cron.schedule('0 0 * * *', cleanupGuestData, {
-  scheduled: true,
-  timezone: "Asia/Kolkata"
-});
-console.log('Scheduled guest data cleanup job to run daily at midnight.');
-
-// Start Server
-const PORT = process.env.PORT || 5000;
+// --- Start Server ---
 server.listen(PORT, () => {
-  console.log(`🚀 Server with Yjs WebSocket support running at http://localhost:${PORT}`);
+  console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode.`);
+  console.log(`  REST API listening on http://localhost:${PORT}`);
+  console.log(`  WebSocket Server listening on ws://localhost:${PORT}`);
 });
+

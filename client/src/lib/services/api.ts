@@ -1,80 +1,74 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 
-// --- TYPE DEFINITIONS (Updated per Schemas) ---
+// --- TYPE DEFINITIONS ---
 
-/**
- * Represents the User model.
- */
+// Represents the User model.
 export interface User {
   _id: string;
   username: string;
   email: string;
   isGuest: boolean;
-  createdAt: string; // ISO Date String
-  updatedAt: string; // ISO Date String
+  createdAt: string;
+  updatedAt: string;
 }
 
-/**
- * Represents the response from a successful authentication request.
- */
+// Represents the response from a successful authentication request.
 export interface AuthResponse extends User {
   token: string;
 }
 
-/**
- * Represents the credentials needed for logging in.
- */
+// Represents the credentials needed for logging in.
 export interface UserCredentials {
   email: string;
   password: string;
 }
 
-/**
- * Represents the data needed for user registration.
- */
+// Represents the data needed for user registration.
 export interface SignupData extends UserCredentials {
   username: string;
 }
 
-/**
- * Represents the Folder model.
- */
+// Represents the Room model.
+export interface Room {
+    _id: string;
+    name: string;
+    roomId: string;
+    owner: string;
+    members: string[];
+}
+
+// --- DEPRECATED TYPES ---
+// These types are no longer used by the Yjs-based file system
+// but are kept for reference or other potential uses.
+
+// Represents the Folder model.
 export interface Folder {
   _id: string;
   name: string;
-  owner: string; // User ID
+  room: string; // Room ID
   parent: string | null; // Parent Folder ID
   createdAt: string;
   updatedAt: string;
 }
 
-/**
- * Represents the File model.
- */
+// Represents the File model.
 export interface File {
   _id: string;
   name: string;
   content: string;
   mimetype: string;
   size: number;
-  owner: string; // User ID
+  room: string; // Room ID
   folder: string | null; // Parent Folder ID
   createdAt: string;
   updatedAt: string;
 }
 
-/**
- * Response structure for file system contents
- */
+// Response structure for file system contents
 export interface FileSystemContents {
   folders: Folder[];
   files: File[];
 }
-
-/**
- * A discriminated union to represent either a File or a Folder.
- */
-export type FileSystemItem = (File & { type: 'file' }) | (Folder & { type: 'folder' });
 
 // --- AXIOS INSTANCE & INTERCEPTOR ---
 
@@ -89,9 +83,12 @@ const api: AxiosInstance = axios.create({
 });
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = localStorage.getItem('userToken');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  // Safely get token, only if window is defined
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('userToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
   return config;
 });
@@ -102,17 +99,17 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Token expired or invalid
-      localStorage.removeItem('userToken');
-      // Optionally redirect to login
       if (typeof window !== 'undefined') {
-        window.location.href = '/login';
+        localStorage.removeItem('userToken');
+        // Optionally redirect to login
+        window.location.href = '/?login=true';
       }
     }
     return Promise.reject(error);
   }
 );
 
-// --- API FUNCTIONS (with updated types) ---
+// --- AUTH API FUNCTIONS ---
 
 export const signupUser = (userData: SignupData): Promise<AxiosResponse<AuthResponse>> =>
   api.post('/auth/signup', userData);
@@ -120,81 +117,34 @@ export const signupUser = (userData: SignupData): Promise<AxiosResponse<AuthResp
 export const loginUser = (credentials: UserCredentials): Promise<AxiosResponse<AuthResponse>> =>
   api.post('/auth/login', credentials);
 
-export const logoutUser = (): void => {
-  localStorage.removeItem('userToken');
-};
+export const guestLogin = (): Promise<AxiosResponse<AuthResponse>> =>
+  api.post('/auth/guest');
 
 export const getProfile = (): Promise<AxiosResponse<User>> =>
   api.get('/auth/me');
 
-/**
- * Get file system contents (folders and files)
- * Returns an object with { folders: [], files: [] }
- */
-export const getFileSystem = (folderId?: string): Promise<AxiosResponse<FileSystemContents>> => {
-  const params = folderId ? { folderId } : {};
-  return api.get('/fs/contents', { params });
-};
+// --- ROOM API FUNCTIONS ---
 
-/**
- * Get a single file's content and metadata
- */
-export const getFileContent = (fileId: string): Promise<AxiosResponse<File>> =>
-  api.get(`/fs/files/${fileId}`);
+export const getRooms = (): Promise<AxiosResponse<Room[]>> =>
+  api.get('/rooms');
 
-/**
- * Update a file's content
- */
-export const updateFileContent = (fileId: string, content: string): Promise<AxiosResponse<File>> =>
-  api.put(`/fs/files/${fileId}`, { content });
+export const createRoom = (name: string): Promise<AxiosResponse<Room>> =>
+  api.post('/rooms', { name });
 
-/**
- * Create an empty file
- */
-export const createEmptyFile = (name: string, folderId?: string): Promise<AxiosResponse<File>> =>
-  api.post('/fs/files', { name, folderId });
+// Add a new member to a room
+export const addMember = (roomId: string, userId: string): Promise<AxiosResponse<Room>> =>
+  api.post(`/rooms/${roomId}/members`, { userId });
 
-/**
- * Upload a file
- */
-export const uploadFile = (file: FormData): Promise<AxiosResponse<File>> =>
-  api.post('/fs/files/upload', file, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
+// Delete a room
+export const deleteRoom = (roomId: string): Promise<AxiosResponse<{ message: string }>> =>
+    api.delete(`/rooms/${roomId}`);
 
-/**
- * Create a folder
- */
-export const createFolder = (name: string, parentId?: string): Promise<AxiosResponse<Folder>> =>
-  api.post('/fs/folders', { name, parentId });
 
-/**
- * Delete a file
- */
-export const deleteFile = (fileId: string): Promise<AxiosResponse<{ message: string }>> =>
-  api.delete(`/fs/files/${fileId}`);
+// --- FILE SYSTEM API FUNCTIONS (DEPRECATED) ---
+// All file system operations are now handled by Yjs and y-websocket.
+// These REST endpoints are no longer used for the file explorer.
 
-/**
- * Delete a folder and its contents
- */
-export const deleteFolder = (folderId: string): Promise<AxiosResponse<{ message: string }>> =>
-  api.delete(`/fs/folders/${folderId}`);
-
-/**
- * Rename a file or folder
- */
-export const renameItem = (
-  type: 'file' | 'folder',
-  itemId: string,
-  newName: string
-): Promise<AxiosResponse<File | Folder>> =>
-  api.put(`/fs/rename/${type}/${itemId}`, { name: newName });
-
-/**
- * Download a file
- */
+// Get the URL to download a file (This might still be a valid REST endpoint)
 export const downloadFile = (fileId: string): string =>
   `${API_URL}/fs/files/${fileId}/download`;
 
