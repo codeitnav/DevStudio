@@ -2,7 +2,7 @@ import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 
 
 // --- TYPE DEFINITIONS ---
 
-// Represents the User model.
+// User model
 export interface User {
   _id: string;
   username: string;
@@ -12,46 +12,45 @@ export interface User {
   updatedAt: string;
 }
 
-// Represents the response from a successful authentication request.
+// Response from authentication endpoints
 export interface AuthResponse extends User {
   token: string;
 }
 
-// Represents the credentials needed for logging in.
+// Credentials for login
 export interface UserCredentials {
   email: string;
   password: string;
 }
 
-// Represents the data needed for user registration.
+// Data required for signup
 export interface SignupData extends UserCredentials {
   username: string;
 }
 
-// Represents the Room model.
+// Room model
 export interface Room {
-    _id: string;
-    name: string;
-    roomId: string;
-    owner: string;
-    members: string[];
+  _id: string;
+  name: string;
+  roomId: string;
+  owner: string;
+  members: string[];
 }
 
 // --- DEPRECATED TYPES ---
-// These types are no longer used by the Yjs-based file system
-// but are kept for reference or other potential uses.
+// Kept for reference or potential use
 
-// Represents the Folder model.
+// Folder model
 export interface Folder {
   _id: string;
   name: string;
   room: string; // Room ID
-  parent: string | null; // Parent Folder ID
+  parent: string | null; // Parent folder ID
   createdAt: string;
   updatedAt: string;
 }
 
-// Represents the File model.
+// File model
 export interface File {
   _id: string;
   name: string;
@@ -59,51 +58,43 @@ export interface File {
   mimetype: string;
   size: number;
   room: string; // Room ID
-  folder: string | null; // Parent Folder ID
+  folder: string | null; // Parent folder ID
   createdAt: string;
   updatedAt: string;
 }
 
-// Response structure for file system contents
+// File system response structure
 export interface FileSystemContents {
   folders: Folder[];
   files: File[];
 }
 
-// --- AXIOS INSTANCE & INTERCEPTOR ---
+// --- AXIOS INSTANCE & INTERCEPTORS ---
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 const api: AxiosInstance = axios.create({
   baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  timeout: 10000, // 10 second timeout
+  headers: { 'Content-Type': 'application/json' },
+  timeout: 10000, // 10s timeout
 });
 
+// Attach auth token to request headers
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  // Safely get token, only if window is defined
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('userToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    if (token) config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-// Add response interceptor for better error handling
+// Handle 401 errors and token expiration
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('userToken');
-        // Optionally redirect to login
-        window.location.href = '/?login=true';
-      }
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('userToken');
+      window.location.href = '/?login=true';
     }
     return Promise.reject(error);
   }
@@ -125,26 +116,20 @@ export const getProfile = (): Promise<AxiosResponse<User>> =>
 
 // --- ROOM API FUNCTIONS ---
 
-export const getRooms = (): Promise<AxiosResponse<Room[]>> =>
-  api.get('/rooms');
+export const getRooms = (): Promise<AxiosResponse<Room[]>> => api.get('/rooms');
 
 export const createRoom = (name: string): Promise<AxiosResponse<Room>> =>
   api.post('/rooms', { name });
 
-// Add a new member to a room
+// Add a member to a room
 export const addMember = (roomId: string, userId: string): Promise<AxiosResponse<Room>> =>
   api.post(`/rooms/${roomId}/members`, { userId });
 
 // Delete a room
 export const deleteRoom = (roomId: string): Promise<AxiosResponse<{ message: string }>> =>
-    api.delete(`/rooms/${roomId}`);
+  api.delete(`/rooms/${roomId}`);
 
-
-// --- FILE SYSTEM API FUNCTIONS (DEPRECATED) ---
-// All file system operations are now handled by Yjs and y-websocket.
-// These REST endpoints are no longer used for the file explorer.
-
-// Get the URL to download a file (This might still be a valid REST endpoint)
+// Get file download URL
 export const downloadFile = (fileId: string): string =>
   `${API_URL}/fs/files/${fileId}/download`;
 

@@ -172,7 +172,7 @@ const RoomCard: FC<{
 
   return (
     <div
-      onClick={() => router.push(`/editor/${room.roomId}`)}
+      onClick={() => router.push(`/playground/${room.roomId}`)}
       className="bg-white rounded-lg shadow-md p-6 group cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border border-gray-200"
     >
       <div className="flex justify-between items-start">
@@ -406,4 +406,3 @@ const DashboardPage = () => {
 };
 
 export default DashboardPage;
-

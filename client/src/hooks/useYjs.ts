@@ -4,48 +4,33 @@ import { useEffect, useState } from "react";
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
 import { User } from "@/lib/services/api";
-import { getToken } from "@/lib/auth"; // Import the getToken function
+import { getToken } from "@/lib/auth";
 
-// --- YJS DATA MODEL ---
-// This is the new, normalized data structure as requested.
-
-/**
- * Represents a node in the file system Y.Map.
- * Note: When retrieved from Y.Map, 'children' will be a Y.Array.
- */
+// Represents a node in the file system
 export interface FileSystemNode {
   id: string;
   name: string;
   type: "file" | "folder";
-  parentId: string | null; // null for root items
-  children: Y.Array<string>; // Y.Array of child node IDs
-  fileContentId?: string; // A unique Y.Doc ID for this file's content
-  tombstone?: boolean; // For soft deletes, if needed
+  parentId: string | null; // null for root nodes
+  children: Y.Array<string>; // child node IDs
+  fileContentId?: string; // Y.Doc ID for file content
+  tombstone?: boolean; // soft delete flag
 }
 
-/**
- * The Y.Map shared type.
- * Keys are node IDs (string), values are Y.Map representations
- * of FileSystemNode (but Yjs maps/arrays, not plain JS objects).
- */
+// Shared Y.Map type for file system
 export type SharedFileSystemMap = Y.Map<any>;
 
-// Define the return type of the hook
+// Return type of the hook
 interface UseYjsHook {
   ydoc: Y.Doc | null;
   provider: WebsocketProvider | null;
-  yNodeMap: SharedFileSystemMap | null; // Renamed from yFiles
+  yNodeMap: SharedFileSystemMap | null; // file system map
   connectionStatus: string;
 }
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:5000"; // Default to port 5000
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:5000"; // WebSocket URL
 
-/**
- * Custom hook to manage Yjs connection for a *specific* Y.Doc.
- * @param docName The name of the Y.Doc to connect to (e.g., "files-room123").
- * @param user The currently authenticated user.
- * @param actualRoomId The *actual* room ID (e.g., "room123") for auth query param.
- */
+// Custom hook to manage Yjs connection for a document
 export const useYjs = (
   docName: string,
   user: Partial<User> | null,
@@ -57,55 +42,39 @@ export const useYjs = (
   const [connectionStatus, setConnectionStatus] = useState("disconnected");
 
   useEffect(() => {
-    if (!docName || !user || !actualRoomId) {
-      // Don't connect if we're missing info
-      return;
-    }
+    if (!docName || !user || !actualRoomId) return; // skip if missing info
 
-    // 1. Create the Y.Doc
-    const doc = new Y.Doc();
-    
-    // 2. Get the shared Y.Map for the file system
-    // This is the new data model.
-    const nodeMap = doc.getMap<any>("file-system-map");
+    const doc = new Y.Doc(); 
+    const nodeMap = doc.getMap<any>("file-system-map"); // get shared file system map
 
-    // 3. Get auth token and create query params
     const token = getToken();
-    const params = {
-      token: token || "",
-      roomId: actualRoomId, // Pass the *actual* room ID for auth
-    };
+    const params = { token: token || "", roomId: actualRoomId }; // auth query params
 
-    // 4. Create the WebSocket Provider
-    const wsProvider = new WebsocketProvider(WS_URL, docName, doc, { params });
+    const wsProvider = new WebsocketProvider(WS_URL, docName, doc, { params }); // create WS provider
 
-    // Listen to connection status changes
-    wsProvider.on("status", (event: { status: string }) => {
-      setConnectionStatus(event.status);
-    });
+    wsProvider.on("status", (event: { status: string }) => setConnectionStatus(event.status)); // update connection status
 
-    // 5. Set up Awareness
+    // set local user awareness
     wsProvider.awareness.setLocalStateField("user", {
       name: user.username,
       email: user.email,
       color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
     });
 
-    // Set state
+    // update state
     setYdoc(doc);
     setProvider(wsProvider);
     setYNodeMap(nodeMap);
 
-    // 6. Cleanup function
     return () => {
-      wsProvider.disconnect();
-      doc.destroy();
+      wsProvider.disconnect(); 
+      doc.destroy(); 
       setYdoc(null);
       setProvider(null);
       setYNodeMap(null);
       setConnectionStatus("disconnected");
     };
-  }, [docName, user, actualRoomId]); // Re-connect if these change
+  }, [docName, user, actualRoomId]); // reconnect if inputs change
 
   return { ydoc, provider, yNodeMap, connectionStatus };
 };

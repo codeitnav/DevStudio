@@ -25,7 +25,7 @@ const JoinOrCreateForm = () => {
     // In a real application, you would first verify if the room ID exists on your backend.
     // For this example, we will just navigate directly.
     // If the backend check fails, you would use setError("Wrong room id entered").
-    router.push(`/editor/${roomId.trim()}`);
+    router.push(`/playground/${roomId.trim()}`);
   };
 
   const renderInitialView = () => (
