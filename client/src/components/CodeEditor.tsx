@@ -7,19 +7,22 @@ import { Text as YText } from "yjs";
 import { WebsocketProvider } from "y-websocket";
 import { useMonacoBinding } from "@/hooks/y-monaco";
 import { executeCode } from "@/lib/services/piston";
-import { LANGUAGE_VERSIONS } from "@/constants";
+// Assume constants.ts is in @/
+import { LANGUAGE_VERSIONS, LANGUAGE_MAPPING } from "@/constants";
 import { Share2 } from "lucide-react";
 
 interface CodeEditorProps {
   yText: YText;
   provider: WebsocketProvider | null;
   roomId: string;
+  fileName: string | null; // --- ADDED: fileName prop ---
 }
 
 export const CodeEditor: React.FC<CodeEditorProps> = ({
   yText,
   provider,
   roomId,
+  fileName, // --- ADDED: fileName prop ---
 }) => {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const [editorInstance, setEditorInstance] =
@@ -37,6 +40,20 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   };
 
   useMonacoBinding(yText, editorInstance, provider);
+
+  // --- ADDED: useEffect to auto-select language ---
+  useEffect(() => {
+    if (fileName) {
+      const ext = "." + fileName.split(".").pop();
+      const language = LANGUAGE_MAPPING[ext];
+      if (language && LANGUAGE_VERSIONS[language as keyof typeof LANGUAGE_VERSIONS]) {
+        setSelectedLanguage(language);
+      } else {
+        setSelectedLanguage("javascript"); // Default fallback
+      }
+    }
+  }, [fileName]);
+  // --- End of new useEffect ---
 
   const handleRunCode = async () => {
     const sourceCode = editorRef.current?.getValue();
@@ -158,7 +175,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           height="100%"
           width="100%"
           theme="vs-dark"
-          language={selectedLanguage}
+          language={selectedLanguage} // This will now update automatically
           onMount={handleEditorDidMount}
           options={{
             minimap: { enabled: false },

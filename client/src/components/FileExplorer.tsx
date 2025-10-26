@@ -3,8 +3,19 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
-import { File, Folder, ChevronRight, Plus, Trash2, Edit, Lock } from "lucide-react";
+import {
+  File,
+  Folder,
+  ChevronRight,
+  Plus,
+  Trash2,
+  Edit,
+  Lock,
+} from "lucide-react";
 import { SharedFileSystemMap } from "@/hooks/useYjs";
+
+// Assume constants.ts is in @/
+import { CODE_SNIPPETS, LANGUAGE_MAPPING } from "@/constants";
 
 interface FileSystemNode {
   id: string;
@@ -28,7 +39,8 @@ interface FileExplorerProps {
   yNodeMap: SharedFileSystemMap | null;
   ydoc: Y.Doc | null;
   provider: WebsocketProvider | null;
-  onFileSelect: (fileId: string, fileContentId: string) => void;
+  // Updated onFileSelect signature
+  onFileSelect: (fileId: string, fileContentId: string, fileName: string) => void;
   selectedFileId: string | null;
 }
 
@@ -39,7 +51,9 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   onFileSelect,
   selectedFileId,
 }) => {
-  const [fileSystem, setFileSystem] = useState<{ [id: string]: FileSystemNode }>({});
+  const [fileSystem, setFileSystem] = useState<{ [id: string]: FileSystemNode }>(
+    {}
+  );
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
@@ -51,7 +65,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       setFileSystem({});
       return;
     }
-
     const updateStateFromYjs = () => {
       const newFileSystem: { [id: string]: FileSystemNode } = {};
       yNodeMap.forEach((yMap, id) => {
@@ -59,29 +72,24 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       });
       setFileSystem(newFileSystem);
     };
-
     updateStateFromYjs();
     const observer = () => updateStateFromYjs();
     yNodeMap.observeDeep(observer);
-
     return () => yNodeMap.unobserveDeep(observer);
   }, [yNodeMap]);
 
   // Awareness state sync for rename lock
   useEffect(() => {
     if (!provider) return;
-
     const observer = () => {
       const states = Array.from(provider.awareness.getStates().values());
       const renamingIds = new Set<string>(
-        states.map((state) => state.renaming).filter(Boolean)
+        states.map((state: any) => state.renaming).filter(Boolean)
       );
       setRenamingSet(renamingIds);
     };
-
     provider.awareness.on("change", observer);
     observer();
-
     return () => provider.awareness.off("change", observer);
   }, [provider]);
 
@@ -89,6 +97,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   const handleCreate = (type: "file" | "folder", parentId: string | null) => {
     if (!ydoc || !yNodeMap) return;
 
+    // Default to .js, user can rename
     const newName = type === "file" ? "untitled.js" : "New Folder";
     const newId = crypto.randomUUID();
     const fileContentId = type === "file" ? crypto.randomUUID() : undefined;
@@ -112,33 +121,31 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       }
     });
 
-    if (type === "file" && fileContentId) onFileSelect(newId, fileContentId);
+    if (type === "file" && fileContentId) {
+      // Pass the new file's name to onFileSelect
+      onFileSelect(newId, fileContentId, newName);
+    }
     if (parentId) setExpandedFolders((prev) => new Set(prev).add(parentId));
   };
 
   // Recursive delete
   const handleDelete = (itemId: string) => {
     if (!ydoc || !yNodeMap) return;
-
     const nodeToDelete = yNodeMap.get(itemId);
     if (!nodeToDelete) return;
-
     const parentId = nodeToDelete.get("parentId") as string | null;
     const itemsToDelete = new Set<string>();
     const stack = [itemId];
-
     while (stack.length > 0) {
       const currentId = stack.pop()!;
       if (itemsToDelete.has(currentId)) continue;
       itemsToDelete.add(currentId);
-
       const node = yNodeMap.get(currentId);
       if (node && node.get("type") === "folder") {
         const children = (node.get("children") as Y.Array<string>).toArray();
         children.forEach((childId) => stack.push(childId));
       }
     }
-
     ydoc.transact(() => {
       itemsToDelete.forEach((id) => yNodeMap.delete(id));
       if (parentId) {
@@ -161,14 +168,12 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   const handleRenameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!ydoc || !yNodeMap || !editingItemId || !editingName) return;
-
     const yMapToUpdate = yNodeMap.get(editingItemId);
     if (yMapToUpdate) {
       ydoc.transact(() => {
         yMapToUpdate.set("name", editingName);
       });
     }
-
     setEditingItemId(null);
     setEditingName("");
     provider?.awareness.setLocalStateField("renaming", null);
@@ -183,7 +188,10 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   };
 
   const rootItemIds = useMemo(
-    () => Object.values(fileSystem).filter((item) => item.parentId === null).map((item) => item.id),
+    () =>
+      Object.values(fileSystem)
+        .filter((item) => item.parentId === null)
+        .map((item) => item.id),
     [fileSystem]
   );
 
@@ -191,7 +199,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
     (itemId: string, depth: number) => {
       const item = fileSystem[itemId];
       if (!item) return null;
-
       const isFolder = item.type === "folder";
       const isSelected = item.id === selectedFileId;
       const isEditing = item.id === editingItemId;
@@ -208,20 +215,27 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
             onClick={
               isFolder
                 ? () => toggleFolder(item.id)
-                : () => onFileSelect(item.id, item.fileContentId!)
+                : // --- MODIFIED: Pass item.name to onFileSelect ---
+                  () => onFileSelect(item.id, item.fileContentId!, item.name)
             }
           >
             <div className="flex items-center flex-1 py-1 truncate">
               {isFolder ? (
-                <ChevronRight
-                  className={`w-4 h-4 mr-1 transition-transform flex-shrink-0 ${
-                    isExpanded ? "rotate-90" : ""
-                  }`}
-                />
+                <>
+                  <ChevronRight
+                    className={`w-4 h-4 mr-1 transition-transform flex-shrink-0 ${
+                      isExpanded ? "rotate-90" : ""
+                    }`}
+                  />
+                  <Folder
+                    className={`w-4 h-4 mr-1 flex-shrink-0 ${
+                      isExpanded ? "text-blue-400" : "text-gray-500"
+                    }`}
+                  />
+                </>
               ) : (
-                <File className="w-4 h-4 mr-1 opacity-60 flex-shrink-0" />
+                <File className="w-4 h-4 mr-1 opacity-60 flex-shrink-0 ml-5" />
               )}
-
               {isEditing ? (
                 <form onSubmit={handleRenameSubmit} className="flex-1">
                   <input
@@ -234,22 +248,57 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                   />
                 </form>
               ) : (
-                <span className={`truncate ${isBeingRenamed ? "opacity-50" : ""}`}>
+                <span
+                  className={`truncate ${
+                    isBeingRenamed ? "opacity-50" : ""
+                  }`}
+                >
                   {item.name}
                 </span>
               )}
-              {isBeingRenamed && <Lock className="w-3 h-3 ml-1 text-yellow-500 flex-shrink-0" />}
+              {isBeingRenamed && (
+                <Lock className="w-3 h-3 ml-1 text-yellow-500 flex-shrink-0" />
+              )}
             </div>
-
             {!isEditing && (
               <div className="flex opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                {isFolder && (
+                  <>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCreate("file", item.id);
+                      }}
+                      className="p-1 hover:text-white"
+                      title="New File"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCreate("folder", item.id);
+                      }}
+                      className="p-1 hover:text-white"
+                      title="New Folder"
+                    >
+                      <Folder className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                )}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     if (!isBeingRenamed) handleRenameStart(item);
                   }}
-                  className={`p-1 ${isBeingRenamed ? "text-gray-600 cursor-not-allowed" : "hover:text-white"}`}
-                  title={isBeingRenamed ? "Being renamed by another user" : "Rename"}
+                  className={`p-1 ${
+                    isBeingRenamed
+                      ? "text-gray-600 cursor-not-allowed"
+                      : "hover:text-white"
+                  }`}
+                  title={
+                    isBeingRenamed ? "Being renamed by another user" : "Rename"
+                  }
                   disabled={isBeingRenamed}
                 >
                   <Edit className="w-3.5 h-3.5" />
@@ -259,8 +308,14 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                     e.stopPropagation();
                     if (!isBeingRenamed) handleDelete(item.id);
                   }}
-                  className={`p-1 ${isBeingRenamed ? "text-gray-600 cursor-not-allowed" : "hover:text-red-500"}`}
-                  title={isBeingRenamed ? "Being renamed by another user" : "Delete"}
+                  className={`p-1 ${
+                    isBeingRenamed
+                      ? "text-gray-600 cursor-not-allowed"
+                      : "hover:text-red-500"
+                  }`}
+                  title={
+                    isBeingRenamed ? "Being renamed by another user" : "Delete"
+                  }
                   disabled={isBeingRenamed}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -268,7 +323,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
               </div>
             )}
           </div>
-
           {isFolder && isExpanded && (
             <div>
               {item.children.length > 0 ? (
@@ -276,9 +330,31 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
               ) : (
                 <div
                   style={{ paddingLeft: `${(depth + 1) * 16}px` }}
-                  className="text-gray-500 italic text-xs py-1"
+                  className="text-gray-500 italic text-xs py-1 flex items-center group"
                 >
-                  (empty)
+                  <span className="ml-5">(empty)</span>
+                  <div className="flex opacity-0 group-hover:opacity-100 transition-opacity ml-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCreate("file", item.id);
+                      }}
+                      className="p-1 hover:text-white"
+                      title="New File"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCreate("folder", item.id);
+                      }}
+                      className="p-1 hover:text-white"
+                      title="New Folder"
+                    >
+                      <Folder className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -298,13 +374,16 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       handleRenameStart,
       handleRenameSubmit,
       toggleFolder,
+      handleCreate,
     ]
   );
 
   return (
     <div className="w-full h-full flex flex-col overflow-y-auto">
       <div className="flex items-center justify-between mb-2 p-1 flex-shrink-0">
-        <span className="text-xs font-bold uppercase text-gray-400">Explorer</span>
+        <span className="text-xs font-bold uppercase text-gray-400">
+          Explorer
+        </span>
         <div className="flex items-center">
           <button
             onClick={() => handleCreate("file", null)}
@@ -322,7 +401,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
           </button>
         </div>
       </div>
-
       <div className="flex-1 overflow-y-auto">
         {yNodeMap === null ? (
           <div className="text-gray-400 text-sm">Connecting...</div>
@@ -335,3 +413,4 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
 };
 
 export default FileExplorer;
+
