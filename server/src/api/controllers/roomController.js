@@ -1,6 +1,6 @@
-const Room = require('../models/Room');
+const Room = require('../../models/Room');
 // Assuming yjs config is exported from 'config/yjs.js'
-const { mdb } = require('../config/yjs'); 
+const { mdb } = require('../../config/yjs'); 
 const { nanoid } = require('nanoid');
 
 // @desc    Create a new room
@@ -34,7 +34,7 @@ exports.createRoom = async (req, res) => {
       // For now, we just ensure the doc is created.
       console.log(`Initialized Yjs doc: ${fileSystemDocName}`);
       // Persist this initial state
-      await mdb.flushDoc(fileSystemDocName);
+      await mdb.flushDocument(fileSystemDocName);
     }
     // --- End Yjs ---
 
@@ -132,12 +132,12 @@ exports.deleteRoom = async (req, res) => {
       for (const contentId of fileContentIds) {
         const fileDocName = `file-${contentId}`;
         console.log(`Deleting Yjs file doc: ${fileDocName}`);
-        await mdb.destroyDoc(fileDocName);
+        await mdb.clearDocument(fileDocName);
       }
       
       // Delete the main file system doc
       console.log(`Deleting Yjs file system doc: ${fileSystemDocName}`);
-      await mdb.destroyDoc(fileSystemDocName);
+      await mdb.clearDocument(fileSystemDocName);
 
       // Clean up in-memory Y.Doc instance
       ydoc.destroy();

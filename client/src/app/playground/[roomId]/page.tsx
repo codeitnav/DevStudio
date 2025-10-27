@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   Panel,
   PanelGroup,
@@ -11,7 +11,8 @@ import {
 import * as Y from "yjs";
 import { Text as YText } from "yjs";
 import { WebsocketProvider } from "y-websocket";
-import { Folder, FileText, Loader2, GripVertical } from "lucide-react";
+import { Folder, FileText, Loader2, GripVertical, Home, Share2 } from "lucide-react";
+import Link from "next/link";
 
 import FileExplorer from "@/components/FileExplorer";
 import { CodeEditor } from "@/components/CodeEditor";
@@ -19,7 +20,7 @@ import ActiveMembers from "@/components/ActiveMembers";
 import { useYjs } from "@/hooks/useYjs";
 import { useAuth } from "@/context/AuthContext";
 import { getToken } from "@/lib/auth";
-// Import constants
+import * as api from "@/lib/services/api"; // Import all api services
 import { CODE_SNIPPETS, LANGUAGE_MAPPING } from "@/constants";
 
 export const getFileRoomName = (roomId: string): string => `files-${roomId}`;
@@ -34,6 +35,55 @@ const LoadingSpinner = () => (
     <p className="ml-4 text-lg">Connecting to workspace...</p>
   </div>
 );
+
+// --- Project Header Component ---
+const ProjectHeader: React.FC<{
+  projectName: string;
+  roomId: string;
+  isLoading: boolean;
+}> = ({ projectName, roomId, isLoading }) => {
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(roomId).then(
+      () => {
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+      },
+      (err) => {
+        console.error("Failed to copy room ID: ", err);
+      }
+    );
+  };
+
+  return (
+    <div className="flex-shrink-0 bg-gray-900 text-white p-3 flex justify-between items-center border-b border-gray-700">
+      <div className="flex items-center min-w-0">
+        <Link href="/dashboard" passHref>
+          <span className="p-2 rounded-md hover:bg-gray-700 transition-colors cursor-pointer" title="Back to Dashboard">
+            <Home className="w-5 h-5 text-gray-400 flex-shrink-0" />
+          </span>
+        </Link>
+        <span className="text-gray-600 mx-2">/</span>
+        {isLoading ? (
+          <div className="h-5 w-48 bg-gray-700 rounded-md animate-pulse"></div>
+        ) : (
+          <h1 className="text-lg font-semibold text-gray-200 truncate" title={projectName}>
+            {projectName}
+          </h1>
+        )}
+      </div>
+      <button
+        onClick={handleShare}
+        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded-md text-sm flex items-center transition-all flex-shrink-0"
+        title="Copy Room ID to share"
+      >
+        <Share2 className="w-4 h-4 mr-1.5" />
+        {isCopied ? "Copied!" : "Share"}
+      </button>
+    </div>
+  );
+};
 
 export default function PlaygroundPage() {
   const params = useParams();
@@ -53,6 +103,9 @@ export default function PlaygroundPage() {
   const [isMembersPanelCollapsed, setIsMembersPanelCollapsed] = useState(false);
   const membersPanelRef = useRef<ImperativePanelHandle>(null);
 
+  const [projectName, setProjectName] = useState("");
+  const [isLoadingProject, setIsLoadingProject] = useState(true);
+
   const fileRoomName = useMemo(() => getFileRoomName(roomId), [roomId]);
 
   const {
@@ -62,7 +115,26 @@ export default function PlaygroundPage() {
     connectionStatus: fileSystemStatus,
   } = useYjs(fileRoomName, user || null, roomId);
 
-  // Establish file-level Yjs provider when a file is opened
+  // Effect to fetch project name
+  useEffect(() => {
+    if (roomId && user) {
+      const fetchProjectName = async () => {
+        try {
+          setIsLoadingProject(true);
+          const response = await api.getRoom(roomId);
+          setProjectName(response.data.name);
+        } catch (error) {
+          console.error("Failed to fetch room details:", error);
+          setProjectName("Untitled Project");
+        } finally {
+          setIsLoadingProject(false);
+        }
+      };
+      fetchProjectName();
+    }
+  }, [roomId, user]);
+
+  // Effect for file-level Yjs connection
   useEffect(() => {
     if (fileProvider) {
       fileProvider.disconnect();
@@ -88,26 +160,21 @@ export default function PlaygroundPage() {
 
       const newYText = fileDoc.getText("file-content");
 
-      // Logic to insert snippet on new file
       const handleSync = (isSynced: boolean) => {
         if (isSynced && newYText.length === 0) {
-          // File is empty, let's insert a snippet
           const ext = "." + selectedFileName.split(".").pop();
-          const language = LANGUAGE_MAPPING[ext] || "javascript";
+          const language = (LANGUAGE_MAPPING as Record<string, string>)[ext] || "javascript";
           const snippet = CODE_SNIPPETS[language as keyof typeof CODE_SNIPPETS];
-
           if (snippet) {
             fileDoc.transact(() => {
               newYText.insert(0, snippet);
             });
           }
         }
-        // We only want this to run once on the initial sync
         newProvider.off("sync", handleSync);
       };
 
       newProvider.on("sync", handleSync);
-
       setFileProvider(newProvider);
       setFileYText(newYText);
     }
@@ -141,13 +208,18 @@ export default function PlaygroundPage() {
     }
   };
 
-  if (fileSystemStatus !== "connected" || !yNodeMap) {
+  if (fileSystemStatus !== "connected" || !yNodeMap || isLoadingProject) {
     return <LoadingSpinner />;
   }
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-gray-800">
-      <PanelGroup direction="horizontal">
+    <div className="h-screen w-screen overflow-hidden bg-gray-800 flex flex-col">
+      <ProjectHeader
+        projectName={projectName}
+        roomId={roomId}
+        isLoading={isLoadingProject}
+      />
+      <PanelGroup direction="horizontal" className="flex-grow min-h-0">
         <Panel defaultSize={15} minSize={15} className="min-w-[200px]">
           <div className="h-full p-2 bg-gray-900 text-white flex flex-col">
             <h2 className="flex items-center text-lg font-semibold mb-2 p-2 text-gray-300 flex-shrink-0">
@@ -173,7 +245,6 @@ export default function PlaygroundPage() {
             <CodeEditor
               yText={fileYText}
               provider={fileProvider}
-              roomId={roomId}
               fileName={selectedFileName}
             />
           ) : (

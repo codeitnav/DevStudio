@@ -116,21 +116,23 @@ export const getProfile = (): Promise<AxiosResponse<User>> =>
 
 // --- ROOM API FUNCTIONS ---
 
-export const getRooms = (): Promise<AxiosResponse<Room[]>> => api.get('/rooms');
+/** Fetches all rooms the current user is a member of. */
+export const getRooms = () => api.get<Room[]>('/rooms');
 
-export const createRoom = (name: string): Promise<AxiosResponse<Room>> =>
-  api.post('/rooms', { name });
+/** Fetches a single room by its human-readable roomId. */
+export const getRoom = (roomId: string) =>
+  api.get<Room>(`/rooms/${roomId}`);
 
-// Add a member to a room
-export const addMember = (roomId: string, userId: string): Promise<AxiosResponse<Room>> =>
-  api.post(`/rooms/${roomId}/members`, { userId });
+/** Creates a new room with the given name. */
+export const createRoom = (name: string) =>
+  api.post<Room>('/rooms', { name });
 
-// Delete a room
-export const deleteRoom = (roomId: string): Promise<AxiosResponse<{ message: string }>> =>
-  api.delete(`/rooms/${roomId}`);
+/** Adds a member to a room using their user _id. */
+export const addMember = (roomId: string, userId: string) =>
+  api.post<Room>(`/rooms/${roomId}/members`, { userId });
 
-// Get file download URL
-export const downloadFile = (fileId: string): string =>
-  `${API_URL}/fs/files/${fileId}/download`;
+/** Deletes a room using its human-readable roomId. */
+export const deleteRoom = (roomId: string) =>
+  api.delete<{ message: string }>(`/rooms/${roomId}`);
 
 export default api;

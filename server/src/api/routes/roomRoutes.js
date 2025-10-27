@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 // We are removing the 'protect' middleware to make this public
-// const { protect } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authMiddleware');
 const { 
   createRoom, 
   getRooms,
@@ -11,7 +11,7 @@ const {
 } = require('../controllers/roomController');
 
 // FIX: Authentication middleware removed for all room routes
-// router.use(protect);
+router.use(protect);
 
 router.route('/')
   .post(createRoom)

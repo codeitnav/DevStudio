@@ -3,28 +3,29 @@
 import { useState, useEffect } from "react";
 import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import Modal from "./ui/Modal";
-import JoinOrCreateForm from "./ui/JoinOrCreateForm";
+import Modal from "./ui/Modal"; // Assuming path is client/src/components/ui/Modal.tsx
+import JoinOrCreateForm from "./ui/JoinOrCreateForm"; // Assuming path is client/src/components/ui/JoinOrCreateForm.tsx
 import { useRouter } from "next/navigation";
 
 const HeroSection = () => {
   const [isFormModalOpen, setFormModalOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  const { user, isLoading } = useAuth();
+  const { user } = useAuth();
   const router = useRouter();
 
+  // For the fade-in animation on load
   useEffect(() => {
     setIsVisible(true);
   }, []);
   
   const handleStartCollaborating = () => {
-    if (user) {
-        setFormModalOpen(true);
+    // If the user is not logged in, redirect them. 
+    // The "?login=true" can be used by your Navbar/Page to auto-open a login modal.
+    if (!user) {
+        router.push('/?login=true'); 
     } else {
-        // If you want to force login before creating/joining a room.
-        // You could open the login modal from the Navbar here.
-        // For simplicity, this example will let anyone open the form.
-        setFormModalOpen(true); 
+        // If they are logged in, open the form modal.
+        setFormModalOpen(true);
     }
   };
 
@@ -65,6 +66,7 @@ const HeroSection = () => {
         </div>
       </section>
       
+      {/* The Modal now contains the combined JoinOrCreateForm */}
       <Modal isOpen={isFormModalOpen} onClose={() => setFormModalOpen(false)}>
         <JoinOrCreateForm />
       </Modal>

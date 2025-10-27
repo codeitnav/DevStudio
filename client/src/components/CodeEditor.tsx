@@ -7,22 +7,18 @@ import { Text as YText } from "yjs";
 import { WebsocketProvider } from "y-websocket";
 import { useMonacoBinding } from "@/hooks/y-monaco";
 import { executeCode } from "@/lib/services/piston";
-// Assume constants.ts is in @/
 import { LANGUAGE_VERSIONS, LANGUAGE_MAPPING } from "@/constants";
-import { Share2 } from "lucide-react";
 
 interface CodeEditorProps {
   yText: YText;
   provider: WebsocketProvider | null;
-  roomId: string;
-  fileName: string | null; // --- ADDED: fileName prop ---
+  fileName: string | null;
 }
 
 export const CodeEditor: React.FC<CodeEditorProps> = ({
   yText,
   provider,
-  roomId,
-  fileName, // --- ADDED: fileName prop ---
+  fileName,
 }) => {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const [editorInstance, setEditorInstance] =
@@ -32,7 +28,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const [output, setOutput] = useState<string | null>(null);
   const [stderr, setStderr] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isCopied, setIsCopied] = useState(false);
 
   const handleEditorDidMount: OnMount = (editor) => {
     editorRef.current = editor;
@@ -41,19 +36,18 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
   useMonacoBinding(yText, editorInstance, provider);
 
-  // --- ADDED: useEffect to auto-select language ---
+  // useEffect to auto-select language based on fileName
   useEffect(() => {
     if (fileName) {
       const ext = "." + fileName.split(".").pop();
-      const language = LANGUAGE_MAPPING[ext];
+      const language = (LANGUAGE_MAPPING as Record<string, string>)[ext];
       if (language && LANGUAGE_VERSIONS[language as keyof typeof LANGUAGE_VERSIONS]) {
         setSelectedLanguage(language);
       } else {
-        setSelectedLanguage("javascript"); // Default fallback
+        setSelectedLanguage("javascript"); 
       }
     }
   }, [fileName]);
-  // --- End of new useEffect ---
 
   const handleRunCode = async () => {
     const sourceCode = editorRef.current?.getValue();
@@ -79,19 +73,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     }
   };
 
-  const handleShare = () => {
-    if (!roomId) return;
-    navigator.clipboard.writeText(roomId).then(
-      () => {
-        setIsCopied(true);
-        setTimeout(() => setIsCopied(false), 2000); // Reset after 2 seconds
-      },
-      (err) => {
-        console.error("Failed to copy room ID: ", err);
-      }
-    );
-  };
-
   return (
     <div className="flex flex-col h-full bg-gray-900 text-white">
       {/* Toolbar */}
@@ -115,15 +96,6 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         </div>
 
         <div className="flex items-center space-x-2">
-          <button
-            onClick={handleShare}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-4 rounded-md text-sm flex items-center transition-all"
-            title="Copy Room ID to share"
-          >
-            <Share2 className="w-4 h-4 mr-1" />
-            {isCopied ? "Copied!" : "Share"}
-          </button>
-
           <button
             onClick={handleRunCode}
             disabled={isLoading}
@@ -175,7 +147,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           height="100%"
           width="100%"
           theme="vs-dark"
-          language={selectedLanguage} // This will now update automatically
+          language={selectedLanguage} 
           onMount={handleEditorDidMount}
           options={{
             minimap: { enabled: false },

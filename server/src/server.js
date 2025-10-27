@@ -8,7 +8,8 @@ const cors = require('cors');
 const connectDB = require('./config/db');
 const { mdb } = require('./config/yjs');
 const { initWebSocketServer } = require('./services/websocketService');
-const authRoutes = require('./api/routes/authRoutes'); // Assuming this path is correct
+const authRoutes = require('./api/routes/authRoutes'); 
+const roomRoutes = require('./api/routes/roomRoutes'); 
 
 // --- Environment Variable Validation ---
 const { PORT } = process.env;
@@ -27,6 +28,7 @@ app.use(express.json());
 
 // --- REST API Routes ---
 app.use('/api/auth', authRoutes);
+app.use('/api/rooms', roomRoutes);
 // You could add other REST routes here (e.g., for creating/managing rooms)
 
 // --- HTTP Server Creation ---
