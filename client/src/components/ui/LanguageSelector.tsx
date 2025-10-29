@@ -3,7 +3,7 @@ import { LANGUAGE_VERSIONS } from "../../constants";
 import { useState, useRef, useEffect } from "react";
 
 const languages = Object.entries(LANGUAGE_VERSIONS);
-const ACTIVE_COLOR = "#60a5fa"; // blue-400 equivalent
+const ACTIVE_COLOR = "#60a5fa";
 
 interface LanguageSelectorProps {
   language: string;

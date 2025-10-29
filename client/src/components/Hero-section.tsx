@@ -14,7 +14,6 @@ const HeroSection = () => {
   const { user, loginAsGuest } = useAuth(); 
   const router = useRouter();
 
-  // For the fade-in animation on load
   useEffect(() => {
     setIsVisible(true);
   }, []);

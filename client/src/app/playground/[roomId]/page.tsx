@@ -11,16 +11,25 @@ import {
 import * as Y from "yjs";
 import { Text as YText } from "yjs";
 import { WebsocketProvider } from "y-websocket";
-import { Folder, FileText, Loader2, GripVertical, Home, Share2 } from "lucide-react";
+import {
+  Folder,
+  FileText,
+  Loader2,
+  GripVertical,
+  Home,
+  Share2,
+  Sparkles, // --- [NEW] ---
+} from "lucide-react";
 import Link from "next/link";
 
 import FileExplorer from "@/components/FileExplorer";
 import { CodeEditor } from "@/components/CodeEditor";
 import ActiveMembers from "@/components/ActiveMembers";
+import { AIChatPanel } from "@/components/AIChatPanel"; 
 import { useYjs } from "@/hooks/useYjs";
 import { useAuth } from "@/context/AuthContext";
 import { getToken } from "@/lib/auth";
-import * as api from "@/lib/services/api"; 
+import * as api from "@/lib/services/api";
 import { CODE_SNIPPETS, LANGUAGE_MAPPING } from "@/constants";
 
 export const getFileRoomName = (roomId: string): string => `files-${roomId}`;
@@ -60,7 +69,10 @@ const ProjectHeader: React.FC<{
     <div className="flex-shrink-0 bg-gray-900 text-white p-3 flex justify-between items-center border-b border-gray-700">
       <div className="flex items-center min-w-0">
         <Link href="/dashboard" passHref>
-          <span className="p-2 rounded-md hover:bg-gray-700 transition-colors cursor-pointer" title="Back to Dashboard">
+          <span
+            className="p-2 rounded-md hover:bg-gray-700 transition-colors cursor-pointer"
+            title="Back to Dashboard"
+          >
             <Home className="w-5 h-5 text-gray-400 flex-shrink-0" />
           </span>
         </Link>
@@ -68,7 +80,10 @@ const ProjectHeader: React.FC<{
         {isLoading ? (
           <div className="h-5 w-48 bg-gray-700 rounded-md animate-pulse"></div>
         ) : (
-          <h1 className="text-lg font-semibold text-gray-200 truncate" title={projectName}>
+          <h1
+            className="text-lg font-semibold text-gray-200 truncate"
+            title={projectName}
+          >
             {projectName}
           </h1>
         )}
@@ -100,8 +115,13 @@ export default function PlaygroundPage() {
     null
   );
   const [fileYText, setFileYText] = useState<YText | null>(null);
+  
+  // --- [NEW] State for collapsible sidebars ---
   const [isMembersPanelCollapsed, setIsMembersPanelCollapsed] = useState(false);
+  const [isAIChatPanelCollapsed, setIsAIChatPanelCollapsed] = useState(true); // Start collapsed
   const membersPanelRef = useRef<ImperativePanelHandle>(null);
+  const aiChatPanelRef = useRef<ImperativePanelHandle>(null);
+  const rightPanelGroupRef = useRef<ImperativePanelHandle>(null);
 
   const [projectName, setProjectName] = useState("");
   const [isLoadingProject, setIsLoadingProject] = useState(true);
@@ -136,6 +156,7 @@ export default function PlaygroundPage() {
 
   // Effect for file-level Yjs connection
   useEffect(() => {
+    // ... (existing useEffect logic for file connection)
     if (fileProvider) {
       fileProvider.disconnect();
       fileProvider.doc.destroy();
@@ -187,6 +208,7 @@ export default function PlaygroundPage() {
     };
   }, [selectedFileContentId, selectedFileName, user, roomId]);
 
+
   const handleFileSelect = (
     fileId: string,
     fileContentId: string,
@@ -197,16 +219,44 @@ export default function PlaygroundPage() {
     setSelectedFileName(fileName);
   };
 
+  // --- [NEW] Toggle functions for sidebars ---
   const toggleMembersPanel = () => {
     const panel = membersPanelRef.current;
     if (panel) {
-      if (panel.isCollapsed()) {
-        panel.expand();
+      panel.isCollapsed() ? panel.expand() : panel.collapse();
+    }
+  };
+
+  const toggleAIChatPanel = () => {
+    const panel = aiChatPanelRef.current;
+    if (panel) {
+      panel.isCollapsed() ? panel.expand() : panel.collapse();
+    }
+  };
+
+  // --- [NEW] Handle collapsing the entire right sidebar ---
+  const rightPanelGroup = rightPanelGroupRef.current;
+  const isRightSidebarCollapsed = 
+    isMembersPanelCollapsed && isAIChatPanelCollapsed;
+
+  const toggleRightSidebar = () => {
+    if (rightPanelGroup) {
+      if (isRightSidebarCollapsed) {
+        // If both are collapsed, expand both (or just one, e.g., members)
+        membersPanelRef.current?.expand();
+        setIsMembersPanelCollapsed(false);
+        aiChatPanelRef.current?.collapse(); // Keep AI collapsed by default
+        setIsAIChatPanelCollapsed(true);
       } else {
-        panel.collapse();
+        // If at least one is open, collapse both
+        membersPanelRef.current?.collapse();
+        aiChatPanelRef.current?.collapse();
+        setIsMembersPanelCollapsed(true);
+        setIsAIChatPanelCollapsed(true);
       }
     }
   };
+
 
   if (fileSystemStatus !== "connected" || !yNodeMap || isLoadingProject) {
     return <LoadingSpinner />;
@@ -220,6 +270,7 @@ export default function PlaygroundPage() {
         isLoading={isLoadingProject}
       />
       <PanelGroup direction="horizontal" className="flex-grow min-h-0">
+        {/* File Explorer Panel */}
         <Panel defaultSize={15} minSize={15} className="min-w-[200px]">
           <div className="h-full p-2 bg-gray-900 text-white flex flex-col">
             <h2 className="flex items-center text-lg font-semibold mb-2 p-2 text-gray-300 flex-shrink-0">
@@ -240,6 +291,7 @@ export default function PlaygroundPage() {
           <GripVertical className="w-2.5 h-8 text-gray-500" />
         </PanelResizeHandle>
 
+        {/* Code Editor Panel */}
         <Panel defaultSize={65} minSize={30}>
           {selectedFileId && fileYText && fileProvider && selectedFileName ? (
             <CodeEditor
@@ -261,25 +313,60 @@ export default function PlaygroundPage() {
           <GripVertical className="w-2.5 h-8 text-gray-500" />
         </PanelResizeHandle>
 
+        {/* --- [NEW] Right Sidebar Group --- */}
         <Panel
-          ref={membersPanelRef}
+          ref={rightPanelGroupRef}
           defaultSize={20}
           minSize={15}
           collapsible={true}
-          collapsedSize={4}
-          onCollapse={() => setIsMembersPanelCollapsed(true)}
-          onExpand={() => setIsMembersPanelCollapsed(false)}
+          collapsedSize={4} // Collapsed size for the *entire* group
+          onCollapse={toggleRightSidebar} // Use custom toggle
+          onExpand={toggleRightSidebar}
           className="min-w-[60px]"
         >
-          <ActiveMembers
-            provider={fileSystemProvider}
-            currentUser={user}
-            isCollapsed={isMembersPanelCollapsed}
-            onToggle={toggleMembersPanel}
-          />
+          {/* This panel now contains a *vertical* group for Members and AI */}
+          <PanelGroup direction="vertical">
+            {/* Active Members Panel */}
+            <Panel
+              ref={membersPanelRef}
+              defaultSize={50}
+              minSize={20}
+              collapsible={true}
+              collapsedSize={4}
+              onCollapse={() => setIsMembersPanelCollapsed(true)}
+              onExpand={() => setIsMembersPanelCollapsed(false)}
+            >
+              <ActiveMembers
+                provider={fileSystemProvider}
+                currentUser={user}
+                isCollapsed={isMembersPanelCollapsed}
+                onToggle={toggleMembersPanel}
+              />
+            </Panel>
+            
+            <PanelResizeHandle className="flex h-2 items-center justify-center bg-gray-800 hover:bg-blue-600 transition-colors data-[resizing]:bg-blue-600">
+              <GripVertical className="w-8 h-2.5 text-gray-500" />
+            </PanelResizeHandle>
+
+            {/* AI Chat Panel */}
+            <Panel
+              ref={aiChatPanelRef}
+              defaultSize={50}
+              minSize={20}
+              collapsible={true}
+              collapsedSize={4}
+              onCollapse={() => setIsAIChatPanelCollapsed(true)}
+              onExpand={() => setIsAIChatPanelCollapsed(false)}
+            >
+              <AIChatPanel
+                currentFileYText={fileYText} // Pass the YText object
+                isCollapsed={isAIChatPanelCollapsed}
+                onToggle={toggleAIChatPanel}
+              />
+            </Panel>
+          </PanelGroup>
         </Panel>
       </PanelGroup>
     </div>
   );
 }
-

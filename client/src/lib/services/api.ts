@@ -69,6 +69,15 @@ export interface FileSystemContents {
   files: File[];
 }
 
+export interface AIRequest {
+  query: string;
+  codeContext: string;
+}
+
+export interface AIResponse {
+  message: string; // The text response from the AI
+}
+
 // --- AXIOS INSTANCE & INTERCEPTORS ---
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
@@ -138,5 +147,10 @@ export const addMember = (roomId: string, userId: string) =>
 /** Deletes a room using its human-readable roomId. */
 export const deleteRoom = (roomId: string) =>
   api.delete<{ message: string }>(`/rooms/${roomId}`);
+
+export const askAI = (data: AIRequest) =>
+  // Set a longer timeout for AI requests (e.g., 35 seconds)
+  api.post<AIResponse>('/ai/ask', data, { timeout: 35000 });
+
 
 export default api;
