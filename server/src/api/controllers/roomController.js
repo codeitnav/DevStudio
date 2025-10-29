@@ -37,7 +37,7 @@ exports.createRoom = async (req, res) => {
   }
 };
 
-// @desc    [NEW] Add the current user to a room
+// @desc    Add the current user to a room
 // @route   POST /api/rooms/:roomId/join
 // @access  Private
 exports.joinRoom = async (req, res) => {

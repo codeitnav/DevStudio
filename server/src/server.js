@@ -10,7 +10,7 @@ const { mdb } = require('./config/yjs');
 const { initWebSocketServer } = require('./services/websocketService');
 const authRoutes = require('./api/routes/authRoutes'); 
 const roomRoutes = require('./api/routes/roomRoutes'); 
-const aiRoutes = require('./api/routes/aiRoutes'); 
+const aiRoutes = require('./api/routes/aiRoutes'); // --- [NEW] Register AI routes
 
 // --- Environment Variable Validation ---
 const { PORT } = process.env;
@@ -30,7 +30,7 @@ app.use(express.json());
 // --- REST API Routes ---
 app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomRoutes);
-app.use('/api/ai', aiRoutes); // --- [NEW] Register AI routes
+app.use('/api/ai', aiRoutes); // --- This line registers all AI routes ---
 
 // --- HTTP Server Creation ---
 const server = http.createServer(app);
@@ -45,3 +45,4 @@ server.listen(PORT, () => {
   console.log(`  REST API listening on http://localhost:${PORT}`);
   console.log(`  WebSocket Server listening on ws://localhost:${PORT}`);
 });
+

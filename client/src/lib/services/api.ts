@@ -2,7 +2,7 @@ import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 
 
 // --- TYPE DEFINITIONS ---
 
-// User model (Reverted to original schema)
+// User model
 export interface User {
   _id: string;
   username: string;
@@ -69,6 +69,8 @@ export interface FileSystemContents {
   files: File[];
 }
 
+// --- AI INTERFACE TYPES ---
+
 export interface AIRequest {
   query: string;
   codeContext: string;
@@ -85,7 +87,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 const api: AxiosInstance = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 10000, // 10s timeout
+  timeout: 10000, // 10s default timeout
 });
 
 // Attach auth token to request headers
@@ -132,7 +134,7 @@ export const getRooms = () => api.get<Room[]>('/rooms');
 export const getRoom = (roomId: string) =>
   api.get<Room>(`/rooms/${roomId}`);
 
-/** [NEW] Adds the current user to a room's member list. */
+/** Adds the current user to a room's member list. */
 export const joinRoom = (roomId: string) =>
   api.post<Room>(`/rooms/${roomId}/join`);
 
@@ -148,9 +150,22 @@ export const addMember = (roomId: string, userId: string) =>
 export const deleteRoom = (roomId: string) =>
   api.delete<{ message: string }>(`/rooms/${roomId}`);
 
+
+// --- AI API FUNCTIONS ---
+
+/**
+ * Sends a query to the AI Pair Programmer.
+ * Uses a long timeout (35s) as AI responses can be slow.
+ */
 export const askAI = (data: AIRequest) =>
-  // Set a longer timeout for AI requests (e.g., 35 seconds)
   api.post<AIResponse>('/ai/ask', data, { timeout: 35000 });
+
+/**
+ * [NEW] Fetches an AI-generated summary for a specific project.
+ * Uses a very long timeout (60s) as this involves fetching all files.
+ */
+export const getProjectSummary = (roomId: string) =>
+  api.get<AIResponse>(`/ai/summary/${roomId}`, { timeout: 60000 });
 
 
 export default api;
