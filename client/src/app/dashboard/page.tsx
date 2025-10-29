@@ -258,7 +258,8 @@ const DashboardPage = () => {
         <header className="bg-white shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
             <h1 className="text-2xl font-bold text-gray-900">
-              Welcome, <span className="text-[#166EC1]">{user.username}!</span>
+              Welcome, <span className="text-[#166EC1]">{user.username}</span>
+              {user.isGuest && <span className="text-sm font-normal text-gray-500 ml-2">(Guest)</span>}
             </h1>
             <button onClick={logout} className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
               <LogOut size={20} /> Logout

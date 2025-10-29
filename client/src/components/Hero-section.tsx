@@ -1,31 +1,45 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import Modal from "./ui/Modal"; // Assuming path is client/src/components/ui/Modal.tsx
-import JoinOrCreateForm from "./ui/JoinOrCreateForm"; // Assuming path is client/src/components/ui/JoinOrCreateForm.tsx
+import Modal from "./ui/Modal";
+import JoinOrCreateForm from "./ui/JoinOrCreateForm";
 import { useRouter } from "next/navigation";
 
 const HeroSection = () => {
   const [isFormModalOpen, setFormModalOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  const { user } = useAuth();
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
+  const { user, loginAsGuest } = useAuth(); 
   const router = useRouter();
 
   // For the fade-in animation on load
   useEffect(() => {
     setIsVisible(true);
   }, []);
-  
+
   const handleStartCollaborating = () => {
-    // If the user is not logged in, redirect them. 
-    // The "?login=true" can be used by your Navbar/Page to auto-open a login modal.
     if (!user) {
-        router.push('/?login=true'); 
+      router.push("/?login=true");
     } else {
-        // If they are logged in, open the form modal.
-        setFormModalOpen(true);
+      setFormModalOpen(true);
+    }
+  };
+
+  const handleGetDemo = async () => {
+    setIsDemoLoading(true);
+    try {
+      if (loginAsGuest) {
+        await loginAsGuest(); 
+        setFormModalOpen(true); 
+      } else {
+        console.error("Guest login functionality is not available.");
+      }
+    } catch (error) {
+      console.error("Guest login failed:", error);
+    } finally {
+      setIsDemoLoading(false);
     }
   };
 
@@ -38,7 +52,9 @@ const HeroSection = () => {
         <div className="relative z-10 text-center">
           <div
             className={`transition-all duration-1000 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+              isVisible
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-8"
             }`}
           >
             <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight">
@@ -50,22 +66,33 @@ const HeroSection = () => {
             </h1>
 
             <p className="text-lg md:text-xl text-gray-700 mb-8 max-w-3xl mx-auto">
-              Build smarter with DevStudio. The real-time collaborative code editor for modern development teams.
+              Build smarter with DevStudio. The real-time collaborative code
+              editor for modern development teams.
             </p>
 
-            <div className="flex justify-center">
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
               <button
                 onClick={handleStartCollaborating}
-                className="group bg-[#166EC1] hover:bg-[#145ca5] text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105 hover:shadow-xl flex items-center justify-center space-x-2"
+                className="group w-full sm:w-auto bg-[#166EC1] hover:bg-[#145ca5] text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105 hover:shadow-xl flex items-center justify-center space-x-2"
               >
                 <span>Start Collaborating</span>
                 <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+              </button>
+              <button
+                onClick={handleGetDemo}
+                disabled={isDemoLoading}
+                className="group w-full sm:w-auto bg-gray-200 hover:bg-gray-300 text-gray-800 px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 hover:scale-105 hover:shadow-xl flex items-center justify-center disabled:opacity-60 disabled:cursor-wait"
+              >
+                {isDemoLoading && (
+                  <Loader2 className="animate-spin h-5 w-5 mr-2" />
+                )}
+                <span>Get a Demo</span>
               </button>
             </div>
           </div>
         </div>
       </section>
-      
+
       {/* The Modal now contains the combined JoinOrCreateForm */}
       <Modal isOpen={isFormModalOpen} onClose={() => setFormModalOpen(false)}>
         <JoinOrCreateForm />

@@ -20,7 +20,7 @@ import ActiveMembers from "@/components/ActiveMembers";
 import { useYjs } from "@/hooks/useYjs";
 import { useAuth } from "@/context/AuthContext";
 import { getToken } from "@/lib/auth";
-import * as api from "@/lib/services/api"; // Import all api services
+import * as api from "@/lib/services/api"; 
 import { CODE_SNIPPETS, LANGUAGE_MAPPING } from "@/constants";
 
 export const getFileRoomName = (roomId: string): string => `files-${roomId}`;
