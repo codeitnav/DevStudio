@@ -1,30 +1,31 @@
 const express = require('express');
 const router = express.Router();
-// We are removing the 'protect' middleware to make this public
 const { protect } = require('../middleware/authMiddleware');
 const { 
   createRoom, 
   getRooms,
   getRoomById,
   deleteRoom,
-  addMember
+  addMember,
+  joinRoom // Import the new function
 } = require('../controllers/roomController');
 
-// FIX: Authentication middleware removed for all room routes
+// This correctly protects all routes in this file
 router.use(protect);
 
 router.route('/')
   .post(createRoom)
   .get(getRooms);
 
+// [NEW] This route handles a user's request to join a room
+router.route('/:roomId/join')
+  .post(joinRoom);
+
 router.route('/:roomId')
   .get(getRoomById)
-  // We should still protect deletion and adding members,
-  // but for simplicity as requested, auth is removed.
-  // Consider re-adding 'protect' middleware to sensitive routes
-  // like deleteRoom and addMember later.
   .delete(deleteRoom);
   
+// This route is for an owner *inviting* another user
 router.route('/:roomId/members')
   .post(addMember);
 

@@ -4,11 +4,9 @@ import React, { useState, useEffect, useCallback, FC } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import * as api from '@/lib/services/api';
-import Avatar from 'boring-avatars';
-import { Plus, LogOut, Trash2, MoreVertical, Loader2, Crown, X, UserPlus } from 'lucide-react';
+import { Plus, LogOut, Trash2, MoreVertical, Loader2, Crown, X, UserPlus, Users } from 'lucide-react';
 
 // --- TYPE DEFINITIONS ---
-// This type helps manage the populated members data on the frontend
 type RoomWithPopulatedMembers = Omit<api.Room, 'owner' | 'members'> & {
   owner: api.User | string;
   members: (api.User | string)[];
@@ -39,7 +37,6 @@ const Modal: FC<{ isOpen: boolean; onClose: () => void; children: React.ReactNod
   );
 };
 
-// Reusable Create Room Form Component
 const CreateRoomForm: FC<{ onClose: () => void }> = ({ onClose }) => {
   const [projectName, setProjectName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -103,7 +100,6 @@ const InviteMemberForm: FC<{ room: RoomWithPopulatedMembers; onClose: () => void
     setIsLoading(true);
     setError('');
     try {
-      // Use the human-readable roomId for the API call
       await api.addMember(room.roomId, userId);
       onMemberAdded();
       onClose();
@@ -144,7 +140,7 @@ const RoomCard: FC<{
   room: RoomWithPopulatedMembers;
   currentUserId: string;
   onInvite: (room: RoomWithPopulatedMembers) => void;
-  onDelete: (roomId: string, roomName: string) => void; // Now passes roomId
+  onDelete: (roomId: string, roomName: string) => void;
 }> = ({ room, currentUserId, onInvite, onDelete }) => {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -156,11 +152,15 @@ const RoomCard: FC<{
       className="bg-white rounded-lg shadow-md p-6 group cursor-pointer transition-all hover:shadow-xl hover:-translate-y-1"
     >
       <div className="flex justify-between items-start">
-        <div>
-          <h3 className="text-xl font-bold text-gray-800 mb-2">{room.name}</h3>
-          {isOwner && (
-            <span className="flex items-center text-xs font-semibold text-amber-600 bg-amber-100 px-2 py-1 rounded-full">
+        <div className="flex flex-col gap-2">
+          <h3 className="text-xl font-bold text-gray-800">{room.name}</h3>
+          {isOwner ? (
+            <span className="flex items-center text-xs font-semibold text-amber-600 bg-amber-100 px-2 py-1 rounded-full w-fit">
               <Crown size={12} className="mr-1" /> Owner
+            </span>
+          ) : (
+             <span className="flex items-center text-xs font-semibold text-sky-600 bg-sky-100 px-2 py-1 rounded-full w-fit">
+              <Users size={12} className="mr-1" /> Member
             </span>
           )}
         </div>
@@ -181,7 +181,6 @@ const RoomCard: FC<{
                 <button
                   onClick={e => {
                     e.stopPropagation();
-                    // CRITICAL: Pass the human-readable `roomId` to the delete handler
                     onDelete(room.roomId, room.name);
                     setMenuOpen(false);
                   }}
@@ -212,7 +211,6 @@ const DashboardPage = () => {
     setIsLoadingRooms(true);
     try {
       const response = await api.getRooms();
-      // Even if backend doesn't populate, this casting allows frontend components to work
       setRooms(response.data as RoomWithPopulatedMembers[]);
     } catch (error) {
       console.error('Failed to fetch rooms:', error);
@@ -233,9 +231,8 @@ const DashboardPage = () => {
   const handleDeleteConfirm = async () => {
     if (!deleteConfirmRoom) return;
     try {
-      // CRITICAL CHANGE: Use the `id` from state which is now the correct human-readable `roomId`
       await api.deleteRoom(deleteConfirmRoom.id);
-      fetchRooms(); // Refresh the list
+      fetchRooms();
     } catch (error) {
       console.error("Failed to delete room:", error);
       alert("You do not have permission to delete this room.");
@@ -297,7 +294,6 @@ const DashboardPage = () => {
         </main>
       </div>
 
-      {/* Modals */}
       <Modal isOpen={isCreateModalOpen} onClose={() => setCreateModalOpen(false)}>
         <CreateRoomForm onClose={() => setCreateModalOpen(false)} />
       </Modal>

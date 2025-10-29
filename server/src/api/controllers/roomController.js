@@ -1,5 +1,6 @@
 const Room = require('../../models/Room');
-// Assuming yjs config is exported from 'config/yjs.js'
+// REVERTED: User model is no longer needed here
+// const User = require('../../models/User'); 
 const { mdb } = require('../../config/yjs'); 
 const { nanoid } = require('nanoid');
 
@@ -8,18 +9,19 @@ const { nanoid } = require('nanoid');
 // @access  Private
 exports.createRoom = async (req, res) => {
   const { name } = req.body;
-  const owner = req.user._id;
+  const ownerId = req.user._id; // Renamed for clarity
 
   if (!name) {
     return res.status(400).json({ message: 'Room name is required.' });
   }
 
   try {
+    // REVERTED: No longer updates the User model
     const newRoom = await Room.create({
       name,
-      owner,
+      owner: ownerId,
       roomId: nanoid(10), // This is the human-readable ID
-      members: [owner],
+      members: [ownerId], // Start with the owner as a member
     });
 
     // --- Yjs ---
@@ -45,6 +47,30 @@ exports.createRoom = async (req, res) => {
   }
 };
 
+// @desc    [NEW] Add the current user to a room
+// @route   POST /api/rooms/:roomId/join
+// @access  Private
+exports.joinRoom = async (req, res) => {
+  try {
+    const room = await Room.findOne({ roomId: req.params.roomId });
+
+    if (!room) {
+      return res.status(404).json({ message: 'Room not found.' });
+    }
+
+    // Add the current user's ID to the members array
+    // addToSet prevents duplicates if they are already a member
+    room.members.addToSet(req.user._id);
+    await room.save();
+
+    res.status(200).json(room);
+  } catch (error) {
+    console.error('Error joining room:', error);
+    res.status(500).json({ message: 'Server error: Could not join room.', error: error.message });
+  }
+};
+
+
 // @desc    Get all rooms for the logged-in user
 // @route   GET /api/rooms
 // @access  Private
@@ -63,6 +89,7 @@ exports.getRooms = async (req, res) => {
 exports.getRoomById = async (req, res) => {
   try {
     const room = await Room.findOne({ roomId: req.params.roomId });
+    // Check if user is a member
     if (!room || !room.members.includes(req.user._id)) {
       return res.status(403).json({ message: 'Access denied or room not found' });
     }
@@ -72,7 +99,7 @@ exports.getRoomById = async (req, res) => {
   }
 };
 
-// @desc    Add a member to a room
+// @desc    Add a member to a room (for inviting others)
 // @route   POST /api/rooms/:roomId/members
 // @access  Private (owner only)
 exports.addMember = async (req, res) => {

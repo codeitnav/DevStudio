@@ -2,7 +2,7 @@ import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 
 
 // --- TYPE DEFINITIONS ---
 
-// User model
+// User model (Reverted to original schema)
 export interface User {
   _id: string;
   username: string;
@@ -122,6 +122,10 @@ export const getRooms = () => api.get<Room[]>('/rooms');
 /** Fetches a single room by its human-readable roomId. */
 export const getRoom = (roomId: string) =>
   api.get<Room>(`/rooms/${roomId}`);
+
+/** [NEW] Adds the current user to a room's member list. */
+export const joinRoom = (roomId: string) =>
+  api.post<Room>(`/rooms/${roomId}/join`);
 
 /** Creates a new room with the given name. */
 export const createRoom = (name: string) =>

@@ -14,24 +14,38 @@ const JoinOrCreateForm = () => {
   
   // State for creating a room
   const [projectName, setProjectName] = useState("");
+
+  // Shared loading and error state
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Shared error state
   const [error, setError] = useState("");
   
   const router = useRouter();
 
   // --- Handlers ---
 
-  const handleJoinRoomSubmit = (e: React.FormEvent) => {
+  const handleJoinRoomSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!roomId.trim()) {
       setError("Room ID cannot be empty.");
       return;
     }
-    // In a real app, you would verify the room ID exists on the backend first.
-    // For now, we navigate directly.
-    router.push(`/playground/${roomId.trim()}`);
+    
+    setIsLoading(true);
+    setError("");
+    
+    try {
+      // --- THIS IS THE FIX ---
+      // Call the API to add the user to the room's member list
+      await api.joinRoom(roomId.trim());
+      
+      // On success, navigate to the playground
+      router.push(`/playground/${roomId.trim()}`);
+      
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to join room. Check the Room ID.');
+      setIsLoading(false); // Only stop loading on error
+    }
+    // On success, we navigate away, so no need to set isLoading(false)
   };
 
   const handleCreateRoomSubmit = async (e: React.FormEvent) => {
@@ -89,7 +103,7 @@ const JoinOrCreateForm = () => {
   
   const renderCreateView = () => (
     <div>
-       <button onClick={() => changeView("initial")} className="absolute top-4 left-4 text-gray-500 hover:text-gray-800">
+       <button onClick={() => changeView("initial")} className="absolute top-4 left-4 text-gray-500 hover:text-gray-800" disabled={isLoading}>
           <ArrowLeft size={24} />
        </button>
       <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">New Project</h2>
@@ -102,6 +116,7 @@ const JoinOrCreateForm = () => {
           className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#166EC1] text-lg"
           required
           autoFocus
+          disabled={isLoading}
         />
          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
         <button
@@ -117,7 +132,7 @@ const JoinOrCreateForm = () => {
 
   const renderJoinView = () => (
     <div>
-       <button onClick={() => changeView("initial")} className="absolute top-4 left-4 text-gray-500 hover:text-gray-800">
+       <button onClick={() => changeView("initial")} className="absolute top-4 left-4 text-gray-500 hover:text-gray-800" disabled={isLoading}>
           <ArrowLeft size={24} />
        </button>
       <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Join a Project</h2>
@@ -133,13 +148,15 @@ const JoinOrCreateForm = () => {
           className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#166EC1] text-lg"
           required
           autoFocus
+          disabled={isLoading}
         />
          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
         <button
           type="submit"
-          className="w-full bg-[#166EC1] text-white py-3 rounded-md hover:bg-[#145ca5] transition-colors text-lg font-semibold"
+          disabled={isLoading}
+          className="w-full bg-[#166EC1] text-white py-3 rounded-md hover:bg-[#145ca5] transition-colors text-lg font-semibold flex items-center justify-center disabled:bg-gray-400"
         >
-          Enter
+          {isLoading ? <Loader2 className="animate-spin" /> : 'Enter'}
         </button>
       </form>
     </div>
@@ -165,3 +182,4 @@ const JoinOrCreateForm = () => {
 };
 
 export default JoinOrCreateForm;
+
