@@ -173,11 +173,8 @@ export default function PlaygroundPage() {
         params,
       });
 
-      newProvider.awareness.setLocalStateField("user", {
-        name: user.username,
-        email: user.email,
-        color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
-      });
+      // The awareness state is no longer set here.
+      // The fileSystemProvider is solely responsible for presence.
 
       const newYText = fileDoc.getText("file-content");
 

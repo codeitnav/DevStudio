@@ -77,7 +77,7 @@ const ActiveMembers: React.FC<ActiveMembersProps> = ({
       <div className="flex items-center justify-between p-2 text-gray-300 flex-shrink-0">
         <h2 className="flex items-center text-lg font-semibold truncate">
           <Users className="w-5 h-5 mr-2 text-gray-500 flex-shrink-0" />
-          Active Members
+          Members
         </h2>
         <button
           onClick={onToggle}

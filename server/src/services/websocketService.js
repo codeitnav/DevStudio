@@ -1,55 +1,54 @@
+// server/src/services/websocketService.js
+
 const { WebSocketServer } = require('ws');
-const { setupWSConnection } = require('y-websocket/bin/utils');
-const url = require('url');
-// Removed JWT, User, and Room imports as they are no longer needed for auth
+// --- [FIX 1] Import 'docs' to manage Yjs documents on the server ---
+const { setupWSConnection, docs } = require('y-websocket/bin/utils');
 
 /**
- * Initializes the WebSocket server and attaches all logic.
- * This version has ALL authentication removed to prevent race conditions.
- * It will accept a connection for any document name.
- * @param {import('http').Server} httpServer - The HTTP server to attach to.
- * @param {import('y-mongodb').MongoDbPersistence} mdb - The Yjs persistence instance.
+ * Initializes the WebSocket server and correctly configures Yjs persistence.
+ * @param {import('http').Server} server The HTTP server instance.
+ * @param {import('y-mongodb-provider').MongodbPersistence} mdb The MongoDB persistence instance.
  */
-const initWebSocketServer = (httpServer, mdb) => {
-  // Revert to a simpler WSS setup without the manual 'upgrade' handler
-  const wss = new WebSocketServer({ server: httpServer });
+const initWebSocketServer = (server, mdb) => {
+  const wss = new WebSocketServer({ server });
 
-  wss.on('connection', async (ws, request) => {
-    console.log('WS: New connection attempt...');
-    
+  wss.on('connection', (conn, req) => {
     try {
-      // We no longer authorize. We just get the document name.
-      const docName = request.url.slice(1).split('?')[0];
+      const docName = req.url.slice(1).split('?')[0];
 
       if (!docName) {
-        console.warn('WS: Connection attempt with no docName. Closing.');
         ws.close(1008, 'Invalid document name');
         return;
       }
-
-      setupWSConnection(ws, request, {
-        docName: docName, // Use the docName from the URL pathname
-        gc: true,
-        persistence: mdb,
-      });
-
-      console.log(`WS: Connection established for doc: ${docName}`);
-
-      // Awareness will be set by clients. The server is no longer
-      // responsible for setting the initial awareness state with user data.
       
-      ws.on('close', () => {
-        console.log(`WS: Connection closed for doc: ${docName}`);
+      // --- [FIX 2] Use the more explicit 'doc' option for persistence ---
+      setupWSConnection(conn, req, {
+        docName,
+        gc: true,
+        // This 'doc' property is the key to the solution.
+        // It's a function that gets or creates a document by its name.
+        doc: docs.get(docName, doc => {
+          // Inside this callback, we explicitly tell our MongoDB provider (mdb)
+          // to start tracking and saving this specific document.
+          console.log(`[Yjs] Binding document "${docName}" to MongoDB persistence.`);
+          mdb.bindState(doc.name, doc);
+          
+          // It's also good practice to clean up the database connection
+          // when the document is no longer in memory on the server.
+          doc.on('destroy', () => {
+            console.log(`[Yjs] Closing persistence for document "${docName}".`);
+            mdb.closeDoc(doc.name);
+          });
+        })
       });
-
+      console.log(`WS: Connection established for doc: ${docName}`);
     } catch (err) {
       console.error('WS: Error during connection setup:', err);
-      ws.close(1011, 'Internal Server Error');
+      conn.close(1011, 'Internal Server Error');
     }
   });
 
-  console.log('WebSocket Server initialized (public, no auth).');
+  console.log('WebSocket Server initialized with robust persistence.');
 };
 
 module.exports = { initWebSocketServer };
-

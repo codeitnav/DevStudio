@@ -4,20 +4,18 @@ import React, { useState, useEffect, useCallback, FC } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import * as api from '@/lib/services/api';
-import { 
-  Plus, 
-  LogOut, 
-  Trash2, 
-  MoreVertical, 
-  Loader2, 
-  Crown, 
-  X, 
-  UserPlus, 
+import {
+  Plus,
+  LogOut,
+  Trash2,
+  MoreVertical,
+  Loader2,
+  Crown,
+  X,
+  UserPlus,
   Users,
-  Sparkles // --- [NEW] ---
 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown'; // --- [NEW] ---
-import remarkGfm from 'remark-gfm'; // --- [NEW] ---
+// Removed unused imports: Sparkles, ReactMarkdown, remarkGfm
 
 // --- TYPE DEFINITIONS ---
 type RoomWithPopulatedMembers = Omit<api.Room, 'owner' | 'members'> & {
@@ -51,51 +49,7 @@ const Modal: FC<{ isOpen: boolean; onClose: () => void; children: React.ReactNod
   );
 };
 
-const SummaryModal: FC<{ room: RoomWithPopulatedMembers; onClose: () => void }> = ({ room, onClose }) => {
-  const [summary, setSummary] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    const fetchSummary = async () => {
-      setIsLoading(true);
-      setError('');
-      try {
-        const response = await api.getProjectSummary(room.roomId);
-        setSummary(response.data.message);
-      } catch (err: any) {
-        setError(err.response?.data?.message || 'Failed to generate summary.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchSummary();
-  }, [room.roomId]);
-
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">AI Summary for "{room.name}"</h2>
-      {isLoading && (
-        <div className="flex justify-center items-center h-48">
-          <Loader2 className="animate-spin w-8 h-8 text-[#166EC1]" />
-        </div>
-      )}
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Error: </strong>
-          <span className="block sm:inline">{error}</span>
-        </div>
-      )}
-      {!isLoading && !error && (
-        <div className="prose prose-sm max-w-none max-h-96 overflow-y-auto bg-gray-50 p-4 rounded-lg">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {summary}
-          </ReactMarkdown>
-        </div>
-      )}
-    </div>
-  );
-};
+// --- Removed SummaryModal Component ---
 
 const CreateRoomForm: FC<{ onClose: () => void }> = ({ onClose }) => {
   const [projectName, setProjectName] = useState('');
@@ -201,8 +155,8 @@ const RoomCard: FC<{
   currentUserId: string;
   onInvite: (room: RoomWithPopulatedMembers) => void;
   onDelete: (roomId: string, roomName: string) => void;
-  onSummarize: (room: RoomWithPopulatedMembers) => void; // --- [NEW] ---
-}> = ({ room, currentUserId, onInvite, onDelete, onSummarize }) => {
+  // Removed onSummarize prop
+}> = ({ room, currentUserId, onInvite, onDelete }) => {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const isOwner = (typeof room.owner === 'string' ? room.owner : room.owner._id) === currentUserId;
@@ -225,7 +179,7 @@ const RoomCard: FC<{
             </span>
           )}
         </div>
-        
+
         <div className="relative">
           <button onClick={e => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
             className="p-2 text-gray-400 hover:text-gray-700 rounded-full">
@@ -234,14 +188,9 @@ const RoomCard: FC<{
           {menuOpen && (
             <div onMouseLeave={() => setMenuOpen(false)}
               className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border">
-              
-              {/* --- [NEW] Summarize Button --- */}
-              <button
-                onClick={e => { e.stopPropagation(); onSummarize(room); setMenuOpen(false); }}
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
-                <Sparkles size={16} className="mr-2" /> Summarize
-              </button>
-              
+
+              {/* --- Removed Summarize Button --- */}
+
               {isOwner && (
                 <>
                   <button
@@ -263,7 +212,7 @@ const RoomCard: FC<{
             </div>
           )}
         </div>
-        
+
       </div>
     </div>
   );
@@ -279,7 +228,7 @@ const DashboardPage = () => {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false);
   const [inviteModalRoom, setInviteModalRoom] = useState<RoomWithPopulatedMembers | null>(null);
   const [deleteConfirmRoom, setDeleteConfirmRoom] = useState<{ id: string; name: string } | null>(null);
-  const [summaryModalRoom, setSummaryModalRoom] = useState<RoomWithPopulatedMembers | null>(null); // --- [NEW] ---
+  // Removed summaryModalRoom state
 
   const fetchRooms = useCallback(async () => {
     setIsLoadingRooms(true);
@@ -355,9 +304,9 @@ const DashboardPage = () => {
               {rooms.map(room => (
                 <RoomCard
                   key={room._id} room={room} currentUserId={user._id}
-                  onInvite={setInviteModalRoom} 
+                  onInvite={setInviteModalRoom}
                   onDelete={handleDeleteRequest}
-                  onSummarize={setSummaryModalRoom} // --- [NEW] ---
+                  // Removed onSummarize prop
                 />
               ))}
             </div>
@@ -392,13 +341,9 @@ const DashboardPage = () => {
             </div>
         </Modal>
       )}
-      
-      {/* --- [NEW] Summary Modal --- */}
-      {summaryModalRoom && (
-        <Modal isOpen={!!summaryModalRoom} onClose={() => setSummaryModalRoom(null)} size="lg">
-          <SummaryModal room={summaryModalRoom} onClose={() => setSummaryModalRoom(null)} />
-        </Modal>
-      )}
+
+      {/* --- Removed Summary Modal --- */}
+
     </>
   );
 };

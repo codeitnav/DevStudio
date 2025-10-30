@@ -37,38 +37,6 @@ export interface Room {
   members: string[];
 }
 
-// --- DEPRECATED TYPES ---
-// Kept for reference or potential use
-
-// Folder model
-export interface Folder {
-  _id: string;
-  name: string;
-  room: string; // Room ID
-  parent: string | null; // Parent folder ID
-  createdAt: string;
-  updatedAt: string;
-}
-
-// File model
-export interface File {
-  _id: string;
-  name: string;
-  content: string;
-  mimetype: string;
-  size: number;
-  room: string; // Room ID
-  folder: string | null; // Parent folder ID
-  createdAt: string;
-  updatedAt: string;
-}
-
-// File system response structure
-export interface FileSystemContents {
-  folders: Folder[];
-  files: File[];
-}
-
 // --- AI INTERFACE TYPES ---
 
 export interface AIRequest {
@@ -127,26 +95,20 @@ export const getProfile = (): Promise<AxiosResponse<User>> =>
 
 // --- ROOM API FUNCTIONS ---
 
-/** Fetches all rooms the current user is a member of. */
 export const getRooms = () => api.get<Room[]>('/rooms');
 
-/** Fetches a single room by its human-readable roomId. */
 export const getRoom = (roomId: string) =>
   api.get<Room>(`/rooms/${roomId}`);
 
-/** Adds the current user to a room's member list. */
 export const joinRoom = (roomId: string) =>
   api.post<Room>(`/rooms/${roomId}/join`);
 
-/** Creates a new room with the given name. */
 export const createRoom = (name: string) =>
   api.post<Room>('/rooms', { name });
 
-/** Adds a member to a room using their user _id. */
 export const addMember = (roomId: string, userId: string) =>
   api.post<Room>(`/rooms/${roomId}/members`, { userId });
 
-/** Deletes a room using its human-readable roomId. */
 export const deleteRoom = (roomId: string) =>
   api.delete<{ message: string }>(`/rooms/${roomId}`);
 
@@ -160,12 +122,6 @@ export const deleteRoom = (roomId: string) =>
 export const askAI = (data: AIRequest) =>
   api.post<AIResponse>('/ai/ask', data, { timeout: 35000 });
 
-/**
- * [NEW] Fetches an AI-generated summary for a specific project.
- * Uses a very long timeout (60s) as this involves fetching all files.
- */
-export const getProjectSummary = (roomId: string) =>
-  api.get<AIResponse>(`/ai/summary/${roomId}`, { timeout: 60000 });
-
+// The getProjectSummary function has been removed.
 
 export default api;

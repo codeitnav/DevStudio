@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { SharedFileSystemMap } from "@/hooks/useYjs";
 
-// Assume constants.ts is in @/
 import { CODE_SNIPPETS, LANGUAGE_MAPPING } from "@/constants";
 
 interface FileSystemNode {
@@ -39,7 +38,6 @@ interface FileExplorerProps {
   yNodeMap: SharedFileSystemMap | null;
   ydoc: Y.Doc | null;
   provider: WebsocketProvider | null;
-  // Updated onFileSelect signature
   onFileSelect: (fileId: string, fileContentId: string, fileName: string) => void;
   selectedFileId: string | null;
 }
@@ -215,8 +213,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
             onClick={
               isFolder
                 ? () => toggleFolder(item.id)
-                : // --- MODIFIED: Pass item.name to onFileSelect ---
-                  () => onFileSelect(item.id, item.fileContentId!, item.name)
+                : () => onFileSelect(item.id, item.fileContentId!, item.name)
             }
           >
             <div className="flex items-center flex-1 py-1 truncate">
@@ -413,4 +410,3 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
 };
 
 export default FileExplorer;
-

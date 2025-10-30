@@ -17,7 +17,7 @@ router.route('/')
   .get(getRooms);
 
 router.route('/:roomId/join')
-  .post(joinRoom);
+.post(joinRoom);
 
 router.route('/:roomId')
   .get(getRoomById)
