@@ -1,18 +1,27 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useAuth } from "@/context/AuthContext";
+import type React from "react"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/context/AuthContext"
 
 const SignupForm = ({ onSwitchToLogin }: { onSwitchToLogin: () => void }) => {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const { signup, isLoading, error } = useAuth();
+  const [username, setUsername] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const { signup, isLoading, error } = useAuth()
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await signup({ username, email, password });
-  };
+    e.preventDefault()
+    try {
+      await signup({ username, email, password })
+      router.push("/")
+    } catch (err) {
+      console.log("Signup failed, error displayed to user")
+    }
+  }
 
   return (
     <div>
@@ -23,7 +32,7 @@ const SignupForm = ({ onSwitchToLogin }: { onSwitchToLogin: () => void }) => {
           placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#166EC1]"
+          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#166EC1] text-white"
           required
         />
         <input
@@ -31,7 +40,7 @@ const SignupForm = ({ onSwitchToLogin }: { onSwitchToLogin: () => void }) => {
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#166EC1]"
+          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#166EC1] text-white"
           required
         />
         <input
@@ -39,7 +48,7 @@ const SignupForm = ({ onSwitchToLogin }: { onSwitchToLogin: () => void }) => {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#166EC1]"
+          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#166EC1] text-white"
           required
         />
         {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -51,14 +60,8 @@ const SignupForm = ({ onSwitchToLogin }: { onSwitchToLogin: () => void }) => {
           {isLoading ? "Creating..." : "Sign Up"}
         </button>
       </form>
-      <p className="text-center text-sm text-gray-600 mt-4">
-        Already have an account?{" "}
-        <button onClick={onSwitchToLogin} className="text-[#166EC1] hover:underline font-semibold">
-          Login
-        </button>
-      </p>
     </div>
-  );
-};
+  )
+}
 
-export default SignupForm;
+export default SignupForm

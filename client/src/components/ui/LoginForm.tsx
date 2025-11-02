@@ -1,17 +1,27 @@
-"use client";
+"use client"
 
-import { useState } from "react";
-import { useAuth } from "@/context/AuthContext";
+import type React from "react"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/context/AuthContext"
 
 const LoginForm = ({ onSwitchToSignup }: { onSwitchToSignup: () => void }) => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const { login, isLoading, error } = useAuth();
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const { login, isLoading, error } = useAuth()
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await login({ email, password });
-  };
+    e.preventDefault()
+    try {
+      await login({ email, password })
+      router.push("/")
+    } catch (err) {
+      // Error is already handled by AuthContext and displayed via error state
+      console.log("Login failed, error displayed to user")
+    }
+  }
 
   return (
     <div>
@@ -22,7 +32,7 @@ const LoginForm = ({ onSwitchToSignup }: { onSwitchToSignup: () => void }) => {
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#166EC1]"
+          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#166EC1] text-white"
           required
         />
         <input
@@ -30,7 +40,7 @@ const LoginForm = ({ onSwitchToSignup }: { onSwitchToSignup: () => void }) => {
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#166EC1]"
+          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#166EC1] text-white"
           required
         />
         {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -42,14 +52,8 @@ const LoginForm = ({ onSwitchToSignup }: { onSwitchToSignup: () => void }) => {
           {isLoading ? "Logging in..." : "Login"}
         </button>
       </form>
-      <p className="text-center text-sm text-gray-600 mt-4">
-        Don&apos;t have an account?{" "}
-        <button onClick={onSwitchToSignup} className="text-[#166EC1] hover:underline font-semibold">
-          Sign up
-        </button>
-      </p>
     </div>
-  );
-};
+  )
+}
 
-export default LoginForm;
+export default LoginForm
