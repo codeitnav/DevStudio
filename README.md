@@ -152,27 +152,6 @@ The backend will run on **[http://localhost:5000](http://localhost:5000)**
 
 ---
 
-**POST** `/api/ai/ask`
-
-**Request Body:**
-
-```json
-{
-  "query": "Explain how this code works",
-  "codeContext": "function add(a, b) { return a + b; }"
-}
-```
-
-**Response:**
-
-```json
-{
-  "message": "This function takes two arguments and returns their sum."
-}
-```
-
----
-
 ## **🌐 Realtime Collaboration Architecture**
 
 | Layer    | Technology             | Purpose                      |
