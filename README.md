@@ -173,6 +173,6 @@ The backend will run on **[http://localhost:5000](http://localhost:5000)**
 ## **👨‍💻 Author**
 
 **Navya Srivastava**
-[LinkedIn](https://linkedin.com) | [GitHub](https://github.com)
+[LinkedIn](https://www.linkedin.com/in/navya-srivastava2810/) | [GitHub](https://github.com/codeitnav)
 
 ---
