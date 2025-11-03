@@ -16,14 +16,13 @@ import {
   LANGUAGE_EXTENSIONS,
 } from "@/constants"
 import { Save } from "lucide-react"
-import type { SharedFileSystemMap } from "@/hooks/useYjs" // Corrected import path
+import type { SharedFileSystemMap } from "@/hooks/useYjs" 
 
 interface CodeEditorProps {
   yText: YText
   provider: WebsocketProvider | null
   fileName: string | null
   roomId: string
-  // Props needed for renaming
   yNodeMap: SharedFileSystemMap | null
   selectedFileId: string | null
   fileContentId: string | null
