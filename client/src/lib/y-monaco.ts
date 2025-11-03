@@ -71,7 +71,6 @@ const createMonacoSelectionFromRelativeSelection = (
   return null;
 };
 
-// Define a type for the awareness state to make it more predictable
 interface AwarenessState {
   selection?: {
     anchor: Y.RelativePosition;
@@ -120,7 +119,7 @@ export class MonacoBinding {
       this._mux(() => {
         this.doc.transact(() => {
           event.changes
-            .slice() // Create a copy for sorting
+            .slice() 
             .sort(
               (change1, change2) => change2.rangeOffset - change1.rangeOffset,
             )
@@ -147,7 +146,7 @@ export class MonacoBinding {
             let anchor = monacoModel.getOffsetAt(sel.getStartPosition());
             let head = monacoModel.getOffsetAt(sel.getEndPosition());
             if (sel.getDirection() === monacoInstance.SelectionDirection.RTL) {
-              [anchor, head] = [head, anchor]; // Swap anchor and head
+              [anchor, head] = [head, anchor]; 
             }
             this.awareness?.setLocalStateField('selection', {
               anchor: Y.createRelativePositionFromTypeIndex(ytext, anchor),

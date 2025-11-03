@@ -103,4 +103,3 @@ export const CODE_SNIPPETS = {
   ocaml: `print_endline "Hello, World!";;\n`,
   fortran: `program hello\nprint *, "Hello, World!"\nend program hello\n`,
 };
-

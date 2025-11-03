@@ -14,7 +14,7 @@ import FileExplorer from "@/components/FileExplorer"
 import { CodeEditor } from "@/components/CodeEditor"
 import ActiveMembers from "@/components/ActiveMembers"
 import { AIChatPanel } from "@/components/AIChatPanel"
-import { useYjs, type SharedFileSystemMap } from "@/hooks/useYjs" // [MOD] Import SharedFileSystemMap
+import { useYjs, type SharedFileSystemMap } from "@/hooks/useYjs"
 import { useAuth } from "@/context/AuthContext"
 import { getToken } from "@/lib/auth"
 import * as api from "@/lib/services/api"

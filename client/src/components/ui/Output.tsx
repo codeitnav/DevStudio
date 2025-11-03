@@ -90,7 +90,6 @@ const Output: React.FC<OutputProps> = ({
           : 'Click "Run Code" to see the output here'}
       </div>
 
-      {/* Toast Notification */}
       {toast && (
         <div className="fixed bottom-4 right-4 bg-red-600 text-white p-4 rounded-md shadow-lg max-w-md">
           <h3 className="font-bold mb-1">{toast.title}</h3>

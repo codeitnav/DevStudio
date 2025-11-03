@@ -3,25 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import * as api from "@/lib/services/api"; // Make sure this path is correct
+import * as api from "@/lib/services/api";
 
 const JoinOrCreateForm = () => {
-  // The view can now be 'initial', 'join', or 'create'
   const [view, setView] = useState<"initial" | "join" | "create">("initial");
-  
-  // State for joining a room
   const [roomId, setRoomId] = useState("");
-  
-  // State for creating a room
   const [projectName, setProjectName] = useState("");
-
-  // Shared loading and error state
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  
   const router = useRouter();
-
-  // --- Handlers ---
 
   const handleJoinRoomSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,23 +19,15 @@ const JoinOrCreateForm = () => {
       setError("Room ID cannot be empty.");
       return;
     }
-    
     setIsLoading(true);
     setError("");
-    
     try {
-      // --- THIS IS THE FIX ---
-      // Call the API to add the user to the room's member list
       await api.joinRoom(roomId.trim());
-      
-      // On success, navigate to the playground
       router.push(`/playground/${roomId.trim()}`);
-      
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to join room. Check the Room ID.');
-      setIsLoading(false); // Only stop loading on error
+      setError(err.response?.data?.message || "Failed to join room. Check the Room ID.");
+      setIsLoading(false);
     }
-    // On success, we navigate away, so no need to set isLoading(false)
   };
 
   const handleCreateRoomSubmit = async (e: React.FormEvent) => {
@@ -57,29 +39,22 @@ const JoinOrCreateForm = () => {
     setIsLoading(true);
     setError("");
     try {
-      // Call the API to create the room
       const response = await api.createRoom(projectName);
       const newRoom = response.data;
-      
-      // Redirect to the new playground on success
       router.push(`/playground/${newRoom.roomId}`);
-      
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create project. Please try again.');
-      setIsLoading(false); // Only stop loading on error
+      setError(err.response?.data?.message || "Failed to create project. Please try again.");
+      setIsLoading(false);
     }
   };
-  
-  const changeView = (newView: "initial" | "join" | "create") => {
-      setView(newView);
-      // Clear all form states when changing views
-      setError("");
-      setRoomId("");
-      setProjectName("");
-      setIsLoading(false);
-  }
 
-  // --- Render Functions for each view ---
+  const changeView = (newView: "initial" | "join" | "create") => {
+    setView(newView);
+    setError("");
+    setRoomId("");
+    setProjectName("");
+    setIsLoading(false);
+  };
 
   const renderInitialView = () => (
     <div>
@@ -100,12 +75,16 @@ const JoinOrCreateForm = () => {
       </div>
     </div>
   );
-  
+
   const renderCreateView = () => (
     <div>
-       <button onClick={() => changeView("initial")} className="absolute top-4 left-4 text-gray-500 hover:text-gray-800" disabled={isLoading}>
-          <ArrowLeft size={24} />
-       </button>
+      <button
+        onClick={() => changeView("initial")}
+        className="absolute top-4 left-4 text-gray-500 hover:text-gray-800"
+        disabled={isLoading}
+      >
+        <ArrowLeft size={24} />
+      </button>
       <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">New Project</h2>
       <form onSubmit={handleCreateRoomSubmit} className="space-y-4">
         <input
@@ -118,13 +97,13 @@ const JoinOrCreateForm = () => {
           autoFocus
           disabled={isLoading}
         />
-         {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
         <button
           type="submit"
           disabled={isLoading}
           className="w-full bg-[#166EC1] text-white py-3 rounded-md hover:bg-[#145ca5] transition-colors text-lg font-semibold flex items-center justify-center disabled:bg-gray-400"
         >
-          {isLoading ? <Loader2 className="animate-spin" /> : 'Create and Go'}
+          {isLoading ? <Loader2 className="animate-spin" /> : "Create and Go"}
         </button>
       </form>
     </div>
@@ -132,9 +111,13 @@ const JoinOrCreateForm = () => {
 
   const renderJoinView = () => (
     <div>
-       <button onClick={() => changeView("initial")} className="absolute top-4 left-4 text-gray-500 hover:text-gray-800" disabled={isLoading}>
-          <ArrowLeft size={24} />
-       </button>
+      <button
+        onClick={() => changeView("initial")}
+        className="absolute top-4 left-4 text-gray-500 hover:text-gray-800"
+        disabled={isLoading}
+      >
+        <ArrowLeft size={24} />
+      </button>
       <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">Join a Project</h2>
       <form onSubmit={handleJoinRoomSubmit} className="space-y-4">
         <input
@@ -150,36 +133,35 @@ const JoinOrCreateForm = () => {
           autoFocus
           disabled={isLoading}
         />
-         {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
         <button
           type="submit"
           disabled={isLoading}
           className="w-full bg-[#166EC1] text-white py-3 rounded-md hover:bg-[#145ca5] transition-colors text-lg font-semibold flex items-center justify-center disabled:bg-gray-400"
         >
-          {isLoading ? <Loader2 className="animate-spin" /> : 'Enter'}
+          {isLoading ? <Loader2 className="animate-spin" /> : "Enter"}
         </button>
       </form>
     </div>
   );
 
   const renderContent = () => {
-      switch(view) {
-          case 'create':
-              return renderCreateView();
-          case 'join':
-              return renderJoinView();
-          case 'initial':
-          default:
-              return renderInitialView();
-      }
-  }
+    switch (view) {
+      case "create":
+        return renderCreateView();
+      case "join":
+        return renderJoinView();
+      case "initial":
+      default:
+        return renderInitialView();
+    }
+  };
 
   return (
-    <div className="relative p-2" style={{minWidth: '350px'}}>
+    <div className="relative p-2" style={{ minWidth: "350px" }}>
       {renderContent()}
     </div>
   );
 };
 
 export default JoinOrCreateForm;
-

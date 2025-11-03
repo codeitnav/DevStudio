@@ -11,10 +11,10 @@ export interface FileSystemNode {
   id: string;
   name: string;
   type: "file" | "folder";
-  parentId: string | null; // null for root nodes
-  children: Y.Array<string>; // child node IDs
-  fileContentId?: string; // Y.Doc ID for file content
-  tombstone?: boolean; // soft delete flag
+  parentId: string | null;
+  children: Y.Array<string>; 
+  fileContentId?: string; 
+  tombstone?: boolean; 
 }
 
 // Shared Y.Map type for file system
@@ -28,7 +28,7 @@ interface UseYjsHook {
   connectionStatus: string;
 }
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:5000"; // WebSocket URL
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:5000"; 
 
 // Custom hook to manage Yjs connection for a document
 export const useYjs = (

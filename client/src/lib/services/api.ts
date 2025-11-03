@@ -125,6 +125,4 @@ export const saveProject = (roomId: string) =>
 export const askAI = (data: AIRequest) =>
   api.post<AIResponse>('/ai/ask', data, { timeout: 35000 });
 
-// The getProjectSummary function has been removed.
-
 export default api;

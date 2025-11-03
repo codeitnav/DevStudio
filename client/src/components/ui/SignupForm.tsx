@@ -44,10 +44,9 @@ const SignupForm = ({ onSwitchToLogin }: { onSwitchToLogin: () => void }) => {
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#166EC1] text-white"
           required
         />
-        {/* Password input wrapper */}
         <div className="relative">
           <input
-            type={showPassword ? "text" : "password"} // Toggle input type
+            type={showPassword ? "text" : "password"} 
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

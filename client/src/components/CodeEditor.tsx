@@ -58,10 +58,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
   useMonacoBinding(yText, editorInstance, provider)
 
-  // [MODIFIED] This effect now syncs language AND snippet when fileName changes (e.g., from rename)
   useEffect(() => {
     if (fileName && yText?.doc) {
-      // 1. Determine new language
       const ext = "." + fileName.split(".").pop()
       const language = (LANGUAGE_MAPPING as Record<string, string>)[ext]
       const newLanguage =
@@ -69,19 +67,15 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           ? language
           : "javascript"
 
-      // 2. Get old language (which is the current state) before setting new one
       const oldLanguage = selectedLanguage
 
-      // 3. Set new language in state
       setSelectedLanguage(newLanguage)
 
-      // 4. Check if snippet needs to be updated
       const currentContent = yText.toString()
       const oldSnippet = CODE_SNIPPETS[oldLanguage as keyof typeof CODE_SNIPPETS]
       const newSnippet = CODE_SNIPPETS[newLanguage as keyof typeof CODE_SNIPPETS]
 
       if (newSnippet && newLanguage !== oldLanguage) {
-        // Update snippet if editor is empty OR contains the *exact* default snippet for the old language
         if (currentContent.trim() === "" || currentContent === oldSnippet) {
           yText.doc.transact(() => {
             yText.delete(0, yText.length)
@@ -90,22 +84,18 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         }
       }
     }
-  }, [fileName, yText]) // `selectedLanguage` is intentionally omitted to get the "old" language
+  }, [fileName, yText])
 
-  // Handle language change from the dropdown
   const handleLanguageChange = (newLanguage: string) => {
-    // Only proceed if the language is actually different
     if (newLanguage === selectedLanguage) return
 
     setSelectedLanguage(newLanguage)
 
-    // 1. Get new snippet and extension
     const snippet = CODE_SNIPPETS[newLanguage as keyof typeof CODE_SNIPPETS]
     const newExtension = LANGUAGE_EXTENSIONS[newLanguage as keyof typeof LANGUAGE_EXTENSIONS]
 
-    if (!newExtension) return // Language not found in map
+    if (!newExtension) return 
 
-    // 2. Update code snippet in Yjs
     if (yText && snippet) {
       yText.doc?.transact(() => {
         yText.delete(0, yText.length)
@@ -113,24 +103,20 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       })
     }
 
-    // 3. Update file name in Yjs and notify parent
     if (fileName && selectedFileId && yNodeMap && fileContentId) {
-      // Get base name, handling names with or without dots
       const lastDotIndex = fileName.lastIndexOf('.')
       const baseName = lastDotIndex !== -1 ? fileName.substring(0, lastDotIndex) : fileName
       
       const newFileName = baseName + newExtension
 
-      if (newFileName === fileName) return // No change needed
+      if (newFileName === fileName) return 
 
       const fileNode = yNodeMap.get(selectedFileId)
       if (fileNode) {
-        // Update the file name in the shared Yjs state
         fileNode.doc?.transact(() => {
           fileNode.set("name", newFileName)
         })
 
-        // Notify parent component (`page.tsx`) of the rename.
         onFileSelect(selectedFileId, fileContentId, newFileName)
       }
     }
@@ -162,11 +148,11 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     try {
       await api.saveProject(roomId)
       setSaveMessage("Saved!")
-      setTimeout(() => setSaveMessage(null), 2000) // Clear message after 2s
+      setTimeout(() => setSaveMessage(null), 2000)
     } catch (error: any) {
       console.error("Failed to save project:", error)
       setSaveMessage("Failed!")
-      setTimeout(() => setSaveMessage(null), 3000) // Clear message after 3s
+      setTimeout(() => setSaveMessage(null), 3000) 
     } finally {
       setIsSaving(false)
     }
@@ -200,7 +186,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             onClick={handleSaveProject}
             disabled={isSaving}
             className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 sm:px-4 rounded-md text-xs sm:text-sm disabled:bg-gray-600 disabled:cursor-not-allowed flex items-center whitespace-nowrap transition-all duration-150"
-            style={{ minWidth: '80px', justifyContent: 'center' }} // Added for consistent width
+            style={{ minWidth: '80px', justifyContent: 'center' }} 
           >
             {isSaving ? (
               <svg

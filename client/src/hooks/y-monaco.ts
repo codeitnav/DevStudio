@@ -6,7 +6,6 @@ import { MonacoBinding } from "y-monaco";
 import { WebsocketProvider } from "y-websocket";
 import * as Y from "yjs";
 
-// Hook to bind a Y.Text to a Monaco editor with Yjs sync
 export const useMonacoBinding = (
   yText: Y.Text | null,
   editorInstance: editor.IStandaloneCodeEditor | null,
