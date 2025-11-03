@@ -112,6 +112,9 @@ export const addMember = (roomId: string, userId: string) =>
 export const deleteRoom = (roomId: string) =>
   api.delete<{ message: string }>(`/rooms/${roomId}`);
 
+export const saveProject = (roomId: string) =>
+  api.post<{ message: string }>(`/rooms/${roomId}/save`);
+
 
 // --- AI API FUNCTIONS ---
 

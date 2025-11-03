@@ -1,9 +1,5 @@
 const jwt = require('jsonwebtoken');
 
-/**
- * Verifies JWT from WebSocket query params.
- * Client URL example: ws://localhost:5000/editor/room123?token=YOUR_JWT
- */
 const verifyWsToken = (req) => {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
@@ -15,7 +11,7 @@ const verifyWsToken = (req) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    return decoded; // { userId, username, iat, exp }
+    return decoded;
   } catch (err) {
     console.error('❌ Invalid or expired JWT:', err.message);
     return null;

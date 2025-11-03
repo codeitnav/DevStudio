@@ -88,65 +88,11 @@ const CreateRoomForm: FC<{ onClose: () => void }> = ({ onClose }) => {
   )
 }
 
-const InviteMemberForm: FC<{ room: RoomWithPopulatedMembers; onClose: () => void; onMemberAdded: () => void }> = ({
-  room,
-  onClose,
-  onMemberAdded,
-}) => {
-  const [userId, setUserId] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!userId.trim()) {
-      setError("User ID cannot be empty.")
-      return
-    }
-    setIsLoading(true)
-    setError("")
-    try {
-      await api.addMember(room.roomId, userId)
-      onMemberAdded()
-      onClose()
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to add member.")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  return (
-    <div>
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Invite to "{room.name}"</h2>
-      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Enter the User ID of the person to invite.</p>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-          placeholder="Enter User ID..."
-          className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#166EC1]"
-          disabled={isLoading}
-        />
-        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-        <button
-          type="submit"
-          className="w-full bg-gradient-to-r from-[#166EC1] to-blue-600 hover:from-[#145ca5] hover:to-blue-700 text-white py-3 rounded-lg font-semibold flex items-center justify-center transition-all duration-300"
-          disabled={isLoading}
-        >
-          {isLoading ? <Loader2 className="animate-spin" /> : "Send Invite"}
-        </button>
-      </form>
-    </div>
-  )
-}
-
 const RoomCard: FC<{
   room: RoomWithPopulatedMembers
   currentUserId: string
   onInvite: (room: RoomWithPopulatedMembers) => void
-  onDelete: (roomId: string, roomName: string) => void
+  onDelete: (roomId: string, roomName: string, isOwner: boolean) => void
 }> = ({ room, currentUserId, onInvite, onDelete }) => {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -186,34 +132,57 @@ const RoomCard: FC<{
               onMouseLeave={() => setMenuOpen(false)}
               className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg z-10 border border-gray-200 dark:border-gray-700"
             >
-              {isOwner && (
-                <>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onInvite(room)
-                      setMenuOpen(false)
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center transition-colors"
-                  >
-                    <UserPlus size={16} className="mr-2" /> Invite Member
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onDelete(room.roomId, room.name)
-                      setMenuOpen(false)
-                    }}
-                    className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center transition-colors"
-                  >
-                    <Trash2 size={16} className="mr-2" /> Delete Room
-                  </button>
-                </>
-              )}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDelete(room.roomId, room.name, isOwner)
+                  setMenuOpen(false)
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center transition-colors"
+              >
+                <Trash2 size={16} className="mr-2" /> Delete Room
+              </button>
             </div>
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+const FunnyLoader: React.FC<{ size?: "lg" | "sm" }> = ({ size = "lg" }) => {
+  return (
+    <div className="flex flex-col items-center justify-center text-center">
+      <div className={`relative ${size === "lg" ? "w-24 h-24" : "w-12 h-12"}`}>
+        <span
+          className={`absolute left-0 font-bold text-blue-500 animate-bounce ${size === "lg" ? "text-6xl" : "text-3xl"}`}
+          style={{ animationDelay: "0s", animationDuration: "1.5s" }}
+        >
+          {"{"}
+        </span>
+        <span
+          className={`absolute right-0 font-bold text-blue-500 animate-bounce ${size === "lg" ? "text-6xl" : "text-3xl"}`}
+          style={{ animationDelay: "0.2s", animationDuration: "1.5s" }}
+        >
+          {"}"}
+        </span>
+        <span
+          className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-bold text-gray-500 dark:text-gray-400 animate-spin ${
+            size === "lg" ? "text-3xl" : "text-xl"
+          }`}
+          style={{ animationDuration: "2s" }}
+        >
+          /
+        </span>
+      </div>
+      {size === "lg" && (
+        <>
+          <p className="mt-6 text-lg font-semibold text-gray-700 dark:text-gray-300">
+            Compiling your dashboard...
+          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">(Don't worry, no syntax errors this time!)</p>
+        </>
+      )}
     </div>
   )
 }
@@ -227,6 +196,7 @@ const DashboardPage = () => {
   const [isCreateModalOpen, setCreateModalOpen] = useState(false)
   const [inviteModalRoom, setInviteModalRoom] = useState<RoomWithPopulatedMembers | null>(null)
   const [deleteConfirmRoom, setDeleteConfirmRoom] = useState<{ id: string; name: string } | null>(null)
+  const [showOwnerOnlyModal, setShowOwnerOnlyModal] = useState(false)
 
   const fetchRooms = useCallback(async () => {
     setIsLoadingRooms(true)
@@ -245,7 +215,11 @@ const DashboardPage = () => {
     if (user) fetchRooms()
   }, [user, isAuthLoading, router, fetchRooms])
 
-  const handleDeleteRequest = (roomId: string, roomName: string) => {
+  const handleDeleteRequest = (roomId: string, roomName: string, isOwner: boolean) => {
+    if (!isOwner) {
+      setShowOwnerOnlyModal(true)
+      return
+    }
     setDeleteConfirmRoom({ id: roomId, name: roomName })
   }
 
@@ -265,7 +239,7 @@ const DashboardPage = () => {
   if (isAuthLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
-        <Loader2 className="w-12 h-12 animate-spin text-[#166EC1]" />
+        <FunnyLoader size="lg" />
       </div>
     )
   }
@@ -312,7 +286,7 @@ const DashboardPage = () => {
 
           {isLoadingRooms ? (
             <div className="text-center py-20">
-              <Loader2 className="w-8 h-8 mx-auto animate-spin text-[#166EC1]" />
+              <FunnyLoader size="sm" />
             </div>
           ) : rooms.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -339,16 +313,6 @@ const DashboardPage = () => {
         <CreateRoomForm onClose={() => setCreateModalOpen(false)} />
       </Modal>
 
-      {inviteModalRoom && (
-        <Modal isOpen={!!inviteModalRoom} onClose={() => setInviteModalRoom(null)}>
-          <InviteMemberForm
-            room={inviteModalRoom}
-            onClose={() => setInviteModalRoom(null)}
-            onMemberAdded={fetchRooms}
-          />
-        </Modal>
-      )}
-
       {deleteConfirmRoom && (
         <Modal isOpen={!!deleteConfirmRoom} onClose={() => setDeleteConfirmRoom(null)}>
           <div className="text-center">
@@ -373,6 +337,23 @@ const DashboardPage = () => {
           </div>
         </Modal>
       )}
+
+      <Modal isOpen={showOwnerOnlyModal} onClose={() => setShowOwnerOnlyModal(false)}>
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Permission Denied</h2>
+          <p className="text-gray-600 dark:text-gray-400 my-4">
+            Only the project owner can delete this room.
+          </p>
+          <div className="flex justify-center gap-4">
+            <button
+              onClick={() => setShowOwnerOnlyModal(false)}
+              className="px-6 py-2 rounded-lg bg-gradient-to-r from-[#166EC1] to-blue-600 hover:from-[#145ca5] hover:to-blue-700 text-white font-semibold transition-all duration-300"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      </Modal>
     </>
   )
 }

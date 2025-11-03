@@ -11,9 +11,6 @@ const safetySettings = [
 
 const MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
 
-/**
- * Helper: Call Gemini API with exponential backoff + fallback model logic.
- */
 const callGeminiWithRetry = async (prompt, maxRetries = 4) => {
   let lastError = null;
 

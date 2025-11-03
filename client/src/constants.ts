@@ -64,6 +64,15 @@ export const LANGUAGE_MAPPING: Record<string, string> = {
   ".f90": "fortran",
 };
 
+export const LANGUAGE_EXTENSIONS: Record<string, string> = Object.entries(
+  LANGUAGE_MAPPING
+).reduce((acc, [ext, lang]) => {
+  if (!acc[lang]) {
+    acc[lang] = ext;
+  }
+  return acc;
+}, {} as Record<string, string>);
+
 export const CODE_SNIPPETS = {
   javascript: `function greet(name) {\n\tconsole.log("Hello, " + name + "!");\n}\n\ngreet("ED08");\n`,
   python: `def greet(name):\n\tprint("Hello, " + name + "!")\n\ngreet("ED08")\n`,

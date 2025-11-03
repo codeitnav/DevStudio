@@ -8,6 +8,7 @@ const {
   getRoomById,
   deleteRoom,
   addMember,
+  saveProject
 } = require('../controllers/roomController');
 
 router.use(protect);
@@ -25,5 +26,8 @@ router.route('/:roomId')
   
 router.route('/:roomId/members')
   .post(addMember);
+
+router.route('/:roomId/save')
+  .post(saveProject);
 
 module.exports = router;

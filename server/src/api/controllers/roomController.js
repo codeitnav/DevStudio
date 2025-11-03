@@ -120,7 +120,7 @@ exports.deleteRoom = async (req, res) => {
     const room = await Room.findOne({ roomId: req.params.roomId });
 
     if (!room) {
-      return res.status(404).json({ message: 'Room not found' });
+      return res.status(4404).json({ message: 'Room not found' });
     }
     if (!room.owner.equals(req.user._id)) {
       return res.status(403).json({ message: 'You do not have permission to delete this room' });
@@ -157,6 +157,49 @@ exports.deleteRoom = async (req, res) => {
     res.status(200).json({ message: 'Room and all associated data deleted successfully' });
   } catch (error) {
     console.error('Error deleting room:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+// @desc    Force save all project documents to MongoDB
+// @route   POST /api/rooms/:roomId/save
+// @access  Private (members only)
+exports.saveProject = async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const room = await Room.findOne({ roomId });
+
+    if (!room || !room.members.includes(req.user._id)) {
+      return res.status(403).json({ message: 'Access denied or room not found' });
+    }
+
+    const fileSystemDocName = `files-${roomId}`;
+    console.log(`Flushing document: ${fileSystemDocName}`);
+    await mdb.flushDocument(fileSystemDocName);
+
+    const ydoc = await mdb.getYDoc(fileSystemDocName);
+    const nodeMap = ydoc.getMap('file-system-map');
+    
+    const fileContentIds = [];
+    nodeMap.forEach(node => {
+      if (node.get('type') === 'file' && node.get('fileContentId')) {
+        fileContentIds.push(node.get('fileContentId'));
+      }
+    });
+
+    const flushPromises = fileContentIds.map(contentId => {
+      const fileDocName = `file-${contentId}`;
+      console.log(`Flushing document: ${fileDocName}`);
+      return mdb.flushDocument(fileDocName);
+    });
+
+    await Promise.all(flushPromises);
+
+    ydoc.destroy();
+
+    res.status(200).json({ message: 'Project saved successfully.' });
+  } catch (error) {
+    console.error('Error saving project:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };

@@ -1,14 +1,15 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/AuthContext"
+import { Eye, EyeOff } from "lucide-react" 
 
 const LoginForm = ({ onSwitchToSignup }: { onSwitchToSignup: () => void }) => {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false) 
   const { login, isLoading, error } = useAuth()
   const router = useRouter()
 
@@ -18,7 +19,6 @@ const LoginForm = ({ onSwitchToSignup }: { onSwitchToSignup: () => void }) => {
       await login({ email, password })
       router.push("/")
     } catch (err) {
-      // Error is already handled by AuthContext and displayed via error state
       console.log("Login failed, error displayed to user")
     }
   }
@@ -35,14 +35,25 @@ const LoginForm = ({ onSwitchToSignup }: { onSwitchToSignup: () => void }) => {
           className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#166EC1] text-white"
           required
         />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#166EC1] text-white"
-          required
-        />
+        {/* Password input wrapper */}
+        <div className="relative">
+          <input
+            type={showPassword ? "text" : "password"} // Toggle input type
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#166EC1] text-white"
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        </div>
         {error && <p className="text-red-500 text-sm">{error}</p>}
         <button
           type="submit"
@@ -57,3 +68,4 @@ const LoginForm = ({ onSwitchToSignup }: { onSwitchToSignup: () => void }) => {
 }
 
 export default LoginForm
+

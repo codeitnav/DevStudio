@@ -6,7 +6,6 @@ if (!MONGO_URI) {
   process.exit(1);
 }
 
-// --- Yjs Persistence Setup ---
 const mdb = new MongodbPersistence(MONGO_URI, {
   collectionName: 'yjs_documents',
   flushSize: 100,

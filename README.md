@@ -1,118 +1,199 @@
-# DevStudio - Real-Time Collaborative Code Editor
+# **DevStudio**
 
-DevStudio is a **real-time collaborative code editor** that brings the power of **instant synchronization, WebSockets, and state management** into one seamless application. Inspired by tools like **VS Code Live Share** and **Google Docs**, this project proves your ability to design **modern, scalable, and interactive applications** that go far beyond simple CRUD apps.
-
----
-
-## 🚀 Why DevStudio?
-
-India and the world are moving fast towards **remote work and collaboration-first environments**. DevStudio addresses one of the biggest developer needs:  
-> *"How can teams code together in real-time, with instant updates, while maintaining reliability, security, and performance?"*
-
-**This project highlights**:
-
-- **Real-Time Systems (WebSockets):** Mastery of live, bidirectional communication.
-- **State Synchronization:** Handling concurrency where multiple users type at the same time.
-- **Third-Party Integrations:** Use of the **Monaco Editor** (that powers VS Code).
-- **Scalable Backend:** Built with **Node.j
-
-s, Express, MongoDB, Redis, and Socket.io**.
-- **Modern Frontend:** Built with **React (Vite + TypeScript + Zustand + TailwindCSS)**.
+**DevStudio** is a real-time collaborative coding platform that enables developers to create rooms, invite team members, and code together in real time. It offers a fully synchronized **collaborative file explorer**, **integrated AI assistant**, and a seamless **multi-user editing experience** powered by **Y.js**, **WebSockets**, and **Next.js**.
 
 ---
 
-## ✨ Features
+## **🚀 Features**
 
-- 🔴 **Live Collaboration** – Multiple users can edit the same code file in real-time.  
-- 📝 **Monaco Editor Integration** – A professional editor experience, the same as VS Code.  
-- 🔄 **Conflict-Free State Sync** – Powered by **Yjs** for distributed real-time editing.  
-- 🔐 **Authentication & Security** – JWT-based authentication with secure data flow.  
-- ⚡ **Low Latency** – Redis caching and WebSocket optimization for fast updates.  
-- 📡 **Scalable Architecture** – Can handle multiple rooms and large teams.  
-- 📧 **Email Notifications** – Nodemailer integration for inviting collaborators.  
-- 🛡️ **Production-Ready** – With Helmet, CORS, rate-limiting, and logging (morgan).  
+* **Real-time Collaboration:**
+  Code with your teammates simultaneously with instant synchronization using Y.js and WebSockets.
+
+* **Room Management:**
+  Create or join rooms, manage participants, and collaborate securely.
+
+* **Collaborative File Explorer:**
+  Browse, create, rename, and delete files in real time within shared rooms.
+
+* **AI Chat Assistant:**
+  Get AI-powered code suggestions, explanations, and debugging help directly in your workspace.
+
+* **User Authentication:**
+  Secure login and signup functionality with JWT authentication and password hashing.
+
+* **Modern UI/UX:**
+  Built with **Next.js 15**, **Tailwind CSS 4**, and **TypeScript** for a smooth developer experience.
 
 ---
 
-## 🛠️ Tech Stack
+## **🧠 Tech Stack**
 
 ### **Frontend**
-- React 18 + Vite + TypeScript
-- Zustand (state management)
-- React Query (data fetching & caching)
-- TailwindCSS (UI styling)
-- Monaco Editor (`@monaco-editor/react`)
-- Socket.IO Client
-- Zod + React Hook Form (form validation)
+
+* **Framework:** Next.js 15 (Turbopack)
+* **Language:** TypeScript
+* **Styling:** Tailwind CSS, shadcn/ui
+* **Editor:** Monaco Editor
+* **State Management:** React Context API
+* **Realtime Engine:** Y.js + y-websocket + y-webrtc
+* **AI Integration:** Axios + REST API (Gemini)
 
 ### **Backend**
-- Node.js + Express
-- MongoDB + Mongoose
-- Redis (caching and session management)
-- Socket.IO (real-time communication)
-- Yjs + y-websocket + y-mongodb-provider (CRDT for collaborative editing)
-- JWT (authentication)
-- Nodemailer (email service)
+
+* **Framework:** Express.js
+* **Database:** MongoDB with Mongoose
+* **Auth:** JWT, bcryptjs
+* **Realtime:** Socket.io + y-websocket
+* **AI Engine:** Google Generative AI (Gemini)
+* **Utilities:** nanoid
 
 ---
 
-## 📂 Project Structure
-```bash
-DevStudio/
-│── client/ # NextJs + TypeScript
-│ ├── src/ # Components, pages, hooks, utils
-│ ├── public/ # Static assets
-│ └── package.json
-│
-│── server/ # Node.js + Express + MongoDB
-│ ├── src/ # Controllers, models, routes, server.js
-│ ├── .env # Environment variables
-│ └── package.json
-│
-└── README.md
+## **📁 Project Structure**
+
+### **Client (Frontend)**
+
+```
+client/
+├── src/
+│   ├── app/
+│   │   ├── dashboard/
+│   │   ├── login/
+│   │   ├── playground/[roomId]/
+│   │   ├── signup/
+│   ├── components/
+│   │   ├── ui/
+│   │   ├── context/
+│   ├── hooks/
+│   ├── lib/
+│   │   ├── services/
+│   ├── constants.ts
+│   ├── globals.css
+```
+
+### **Server (Backend)**
+
+```
+server/
+├── src/
+│   ├── api/
+│   │   ├── controllers/
+│   │   ├── middleware/
+│   │   ├── routes/
+│   ├── config/
+│   ├── models/
+│   ├── services/
+│   ├── server.js
 ```
 
 ---
 
-## ⚙️ Installation & Setup
+## **⚙️ Environment Variables**
 
-### 1️⃣ Clone the repo
+### **Frontend (`client/.env`)**
+
+```
+PORT=3000
+NEXT_PUBLIC_API_URL=http://localhost:5000/api
+NEXT_PUBLIC_WS_URL=ws://localhost:5000
+```
+
+### **Backend (`server/.env`)**
+
+```
+PORT=5000
+CLIENT_URL=http://localhost:3000
+MONGO_URI=mongodb+srv://<username>:<password>@cluster0.<cluster-id>.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+JWT_SECRET=<your_jwt_secret_key>
+GEMINI_API_KEY=<your_gemini_api_key>
+```
+
+---
+
+## **🧩 AI Chat Integration**
+
+The AI assistant uses **Google Generative AI (Gemini)** for contextual coding help.
+It supports automatic model fallback and exponential retry in case of API overloads or transient failures.
+
+```js
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+```
+
+---
+
+## **🖥️ Running the Project**
+
+### **1. Clone the Repository**
+
 ```bash
 git clone https://github.com/codeitnav/DevStudio.git
 cd DevStudio
 ```
 
-2️⃣ Setup Backend
+### **2. Setup the Server**
+
 ```bash
-cd backend
+cd server
 npm install
-cp .env.example .env   # configure environment variables
-npm run dev            # start backend in dev mode
+npm run dev
 ```
-3️⃣ Setup Frontend
+
+### **3. Setup the Client**
+
 ```bash
-cd frontend
+cd client
 npm install
-npm run dev            # start frontend dev server
-```
-🔑 Environment Variables
-
-Backend .env example:
-```bash
-PORT=5000
-MONGO_URI=mongodb://localhost:27017/devstudio
-JWT_SECRET=your_jwt_secret
-REDIS_URL=redis://localhost:6379
-EMAIL_USER=your_email@example.com
-EMAIL_PASS=your_password
+npm run dev
 ```
 
-## 📈 Future Enhancements
+The frontend will run on **[http://localhost:3000](http://localhost:3000)**
+The backend will run on **[http://localhost:5000](http://localhost:5000)**
 
-🔍 Code syntax highlighting and linting in real-time.
+---
 
-🎥 Integrated video/audio chat with WebRTC.
+**POST** `/api/ai/ask`
 
-☁️ Cloud storage integration (AWS/GCP).
+**Request Body:**
 
-🏗️ Dockerized deployment.
+```json
+{
+  "query": "Explain how this code works",
+  "codeContext": "function add(a, b) { return a + b; }"
+}
+```
+
+**Response:**
+
+```json
+{
+  "message": "This function takes two arguments and returns their sum."
+}
+```
+
+---
+
+## **🌐 Realtime Collaboration Architecture**
+
+| Layer    | Technology             | Purpose                      |
+| -------- | ---------------------- | ---------------------------- |
+| Frontend | Y.js, y-monaco         | Shared code editing          |
+| Backend  | y-websocket, Socket.io | Data synchronization         |
+| Database | MongoDB                | User, Room, and File storage |
+| AI Layer | Gemini API             | AI assistant responses       |
+
+---
+
+## **📚 Future Enhancements**
+
+* Realtime voice/video collaboration
+* Integrated GitHub file import/export
+
+---
+
+## **👨‍💻 Author**
+
+**Navya Srivastava**
+[LinkedIn](https://linkedin.com) | [GitHub](https://github.com)
+
+---

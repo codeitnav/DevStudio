@@ -5,8 +5,6 @@ const generateToken = (id, expiresIn = '30d') => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn });
 };
 
-// --- PUBLIC CONTROLLERS ---
-
 // @desc    Register a new user
 // @route   POST /api/auth/signup
 // @access  Public
@@ -96,8 +94,6 @@ exports.guestLogin = async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
-
-// --- PRIVATE CONTROLLERS ---
 
 // @desc    Get current user's profile
 // @route   GET /api/auth/me
