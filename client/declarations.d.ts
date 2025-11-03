@@ -1,1 +1,0 @@
-declare module '@y-sweet/react';
