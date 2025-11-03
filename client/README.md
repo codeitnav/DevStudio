@@ -38,15 +38,6 @@ client/
 │   │
 │   ├── components/
 │   │   ├── ui/
-│   │   │   ├── Button.tsx
-│   │   │   ├── Modal.tsx
-│   │   │   ├── JoinOrCreateForm.tsx
-│   │   │   ├── SignupForm.tsx
-│   │   │   ├── LoginForm.tsx
-│   │   │   ├── CodeEditor.tsx
-│   │   │   ├── AIPanel.tsx
-│   │   │   ├── FileExplorer.tsx
-│   │   │   └── Navbar.tsx
 │   │
 │   ├── context/
 │   │   └── AuthContext.tsx
@@ -57,12 +48,7 @@ client/
 │   │
 │   ├── lib/
 │   │   ├── services/
-│   │   │   ├── api.ts
-│   │   │   ├── auth.ts
-│   │   │   ├── utils.ts
-│   │   │   ├── piston.ts
-│   │   │   └── y-monaco.ts
-│   │   └── constants.ts
+│   ├── constants.ts
 │   │
 │   └── globals.css
 │
