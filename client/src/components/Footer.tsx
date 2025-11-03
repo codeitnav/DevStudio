@@ -28,9 +28,9 @@ const Footer: React.FC = () => {
 
             <div className="flex gap-4">
               {[
-                { Icon: Github, href: "https://github.com", label: "GitHub" },
-                { Icon: Linkedin, href: "https://linkedin.com", label: "LinkedIn" },
-                { Icon: Mail, href: "mailto:hello@devstudio.com", label: "Email" },
+                { Icon: Github, href: "https://github.com/codeitnav", label: "GitHub" },
+                { Icon: Linkedin, href: "https://www.linkedin.com/in/navya-srivastava2810/", label: "LinkedIn" },
+                { Icon: Mail, href: "mailto:navya.srivas03@gmail.com", label: "Email" },
               ].map(({ Icon, href, label }, i) => (
                 <motion.a
                   key={i}
